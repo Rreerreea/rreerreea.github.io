@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ВкусВилл — Лига поставщиков</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+    background: #C8C8CC;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 0 40px;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.18),
+      0 50px 120px rgba(0,0,0,0.55),
+      inset 0 0 0 1px rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    background: #F2F2F7;
+    position: relative;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    height: 50px;
+    background: #252535;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    flex-shrink: 0;
+  }
+  .sb-time { font-size: 16px; font-weight: 700; color: white; letter-spacing: -0.3px; }
+  .sb-icons { display: flex; align-items: center; gap: 7px; }
+  .sb-signal { display: flex; align-items: flex-end; gap: 1.5px; }
+  .sb-signal span { background: white; border-radius: 1px; width: 3px; }
+  .sb-wifi { color: white; font-size: 13px; }
+  .sb-battery { display: flex; align-items: center; gap: 2px; }
+  .sb-battery-body { width: 24px; height: 12px; border: 1.5px solid white; border-radius: 3px; padding: 1.5px; display: flex; align-items: center; }
+  .sb-battery-fill { background: white; border-radius: 1px; height: 100%; }
+  .sb-battery-tip { width: 2px; height: 5px; background: rgba(255,255,255,0.5); border-radius: 0 1px 1px 0; }
+  .sb-pct { font-size: 11px; font-weight: 600; color: white; }
+
+  /* APP HEADER */
+  .app-header {
+    background: #252535;
+    padding: 6px 20px 14px;
+    flex-shrink: 0;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-leaf { width: 38px; height: 38px; background: #3DB240; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .logo-text .t1 { font-size: 18px; font-weight: 800; color: white; letter-spacing: -0.4px; }
+  .logo-text .t2 { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 1px; }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .hbtn { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; position: relative; }
+  .hbtn-badge { position: absolute; top: -3px; right: -3px; width: 16px; height: 16px; background: #F4B731; border-radius: 50%; font-size: 9px; font-weight: 800; color: #252535; display: flex; align-items: center; justify-content: center; border: 2px solid #252535; }
+
+  .tabs { display: flex; background: rgba(255,255,255,0.08); border-radius: 11px; padding: 3px; }
+  .tab { flex: 1; text-align: center; padding: 8px 6px; border-radius: 9px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.2s; letter-spacing: -0.2px; }
+  .tab.active { background: white; color: #1A1A2E; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; background: #F2F2F7; position: relative; }
+  .content::-webkit-scrollbar { display: none; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  #screen-support { display: none; flex-direction: column; }
+  #screen-support.active { display: flex; }
+
+  .content-inner { padding: 14px 16px 12px; }
+
+  /* LEAGUE CARD */
+  .league-card { background: linear-gradient(155deg, #2A8A2D 0%, #3DB240 55%, #56CC59 100%); border-radius: 20px; padding: 18px; margin-bottom: 10px; position: relative; overflow: hidden; }
+  .league-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 130px; height: 130px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+  .league-card::after { content: ''; position: absolute; bottom: -20px; right: 40px; width: 80px; height: 80px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+  .lc-eyebrow { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .lc-main { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .lc-badge { width: 66px; height: 66px; border-radius: 50%; background: linear-gradient(145deg, #B0B0B0, #F5F5F5, #C0C0C0); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5); }
+  .lc-badge-icon { font-size: 26px; margin-bottom: 1px; }
+  .lc-badge-lbl { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; color: #3A3A3A; }
+  .lc-info { flex: 1; min-width: 0; }
+  .lc-level { font-size: 26px; font-weight: 900; color: white; letter-spacing: -0.5px; }
+  .lc-desc { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+  .lc-score { display: flex; align-items: baseline; gap: 4px; margin-top: 6px; }
+  .lc-score-n { font-size: 34px; font-weight: 900; color: white; line-height: 1; }
+  .lc-score-d { font-size: 16px; color: rgba(255,255,255,0.55); }
+  .lc-stars { font-size: 14px; margin-top: 4px; }
+  .lc-bar-wrap { margin-bottom: 10px; }
+  .lc-bar-labels { display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 6px; gap: 8px; }
+  .lc-bar-labels span:first-child { flex: 1; min-width: 0; line-height: 1.35; }
+  .lc-bar-labels span:last-child { flex-shrink: 0; font-weight: 700; }
+  .lc-bar { height: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; overflow: hidden; }
+  .lc-bar-fill { height: 100%; background: linear-gradient(90deg, #F4B731, #FFE57F); border-radius: 4px; box-shadow: 0 0 8px rgba(244,183,49,0.7); width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+  .lc-hint { background: rgba(0,0,0,0.15); border-radius: 10px; padding: 9px 12px; font-size: 12px; color: rgba(255,255,255,0.9); margin-bottom: 10px; line-height: 1.45; }
+  .lc-hint b { color: #FFE57F; }
+  .lc-rank { background: rgba(255,255,255,0.15); border-radius: 11px; padding: 10px 13px; display: flex; align-items: center; gap: 8px; }
+  .lc-rank-txt { font-size: 12px; color: rgba(255,255,255,0.8); flex-shrink: 0; }
+  .lc-rank-txt b { font-size: 13px; color: white; display: block; margin-bottom: 1px; white-space: nowrap; }
+  .lc-rank-bar { flex: 1; min-width: 0; height: 5px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; }
+  .lc-rank-fill { height: 100%; background: #FFE57F; width: 0; border-radius: 3px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+  .lc-rank-val { font-size: 12px; color: white; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+  /* WHITE CARD */
+  .wcard { background: white; border-radius: 18px; padding: 16px; margin-bottom: 10px; }
+  .wcard-title { font-size: 16px; font-weight: 800; color: #1A1A1A; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .pill-plat { background: linear-gradient(90deg, #B0B0B0, #E8E8E8); color: #333; }
+  .pill-green { background: #E8F5E9; color: #2A8A2D; }
+
+  /* SCORE PAIR */
+  .score-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: start; }
+  .score-block { background: white; border-radius: 18px; padding: 13px 12px; cursor: pointer; transition: transform 0.12s; overflow: hidden; min-width: 0; }
+  .score-block:active { transform: scale(0.97); }
+  .sb-head { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; }
+  .sb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sb-dot-g { background: #3DB240; }
+  .sb-dot-y { background: #F4B731; }
+  .sb-lbl { font-size: 11px; font-weight: 700; color: #8E8E93; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb-num { font-size: 24px; font-weight: 900; color: #1A1A1A; line-height: 1; }
+  .sb-of { font-size: 12px; color: #8E8E93; margin-bottom: 7px; }
+  .sb-bar { height: 4px; background: #F2F2F7; border-radius: 2px; overflow: hidden; margin-bottom: 9px; }
+  .sb-fill { height: 100%; border-radius: 2px; width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+  .sb-fill-g { background: linear-gradient(90deg, #2A8A2D, #3DB240); }
+  .sb-fill-y { background: linear-gradient(90deg, #D4900A, #F4B731); }
+  .metric { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 6px; }
+  .metric:last-of-type { margin-bottom: 0; }
+  .m-name { font-size: 12px; color: #8E8E93; line-height: 1.3; flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .m-vals { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .m-val { font-size: 12px; font-weight: 700; color: #1A1A1A; white-space: nowrap; }
+  .delta { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+  .d-up { background: #E8F5E9; color: #2A8A2D; }
+  .d-dn { background: #FFEBEE; color: #C62828; }
+  .sc-link { margin-top: 9px; padding: 7px 6px; background: #F2F2F7; border-radius: 8px; text-align: center; font-size: 12px; font-weight: 700; color: #3DB240; cursor: pointer; }
+
+  /* PRIVILEGES */
+  .priv-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F2F2F7; }
+  .priv-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .priv-row:first-child { padding-top: 0; }
+  .pr-icon { width: 40px; height: 40px; background: #E8F5E9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .pr-body { flex: 1; min-width: 0; }
+  .pr-body b { display: block; font-size: 13px; font-weight: 700; color: #1A1A1A; margin-bottom: 3px; }
+  .pr-body span { font-size: 12px; color: #8E8E93; line-height: 1.4; display: block; }
+  .pr-check { color: #3DB240; font-size: 18px; font-weight: 900; flex-shrink: 0; margin-top: 10px; }
+
+  /* LEVELS */
+  .level-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #F2F2F7; cursor: pointer; border-radius: 10px; transition: background 0.15s; }
+  .level-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .level-row:first-child { padding-top: 0; }
+  .level-row.active { background: #F2F2F7; padding: 11px 10px; border-bottom: none; margin-bottom: 2px; }
+  .lr-ico { width: 44px; height: 44px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .lr-ico.bronze { background: linear-gradient(145deg, #A0522D, #CD7F32); }
+  .lr-ico.silver { background: linear-gradient(145deg, #6B7A8B, #9BA4B5); }
+  .lr-ico.gold   { background: linear-gradient(145deg, #C8960C, #F4B731); }
+  .lr-ico.plat   { background: linear-gradient(145deg, #9B9B9B, #F0F0F0); }
+  .lr-ico span { font-size: 20px; }
+  .lr-info { flex: 1; min-width: 0; }
+  .lr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+  .lr-name { font-size: 14px; font-weight: 800; color: #1A1A1A; }
+  .now-pill { font-size: 11px; font-weight: 800; background: #3DB240; color: white; padding: 2px 8px; border-radius: 8px; }
+  .lr-req { font-size: 12px; color: #8E8E93; }
+  .lr-perks { font-size: 12px; color: #4A4A4A; margin-top: 6px; line-height: 1.6; display: none; }
+  .level-row.open .lr-perks { display: block; }
+  .lr-chevron { color: #C7C7CC; font-size: 16px; font-weight: 300; transition: transform 0.2s; flex-shrink: 0; }
+  .level-row.open .lr-chevron { transform: rotate(90deg); color: #3DB240; }
+
+  /* TIPS */
+  .tip-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F2F2F7; }
+  .tip-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .tip-item:first-child { padding-top: 0; }
+  .tip-n { width: 26px; height: 26px; flex-shrink: 0; background: #E8F5E9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #2A8A2D; }
+  .tip-t { font-size: 13px; color: #4A4A4A; line-height: 1.5; }
+  .tip-t b { color: #1A1A1A; }
+
+  /* BANNER */
+  .delivery-banner { background: #3DB240; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; cursor: pointer; }
+  .db-text b { display: block; font-size: 13px; font-weight: 800; color: white; }
+  .db-text span { font-size: 11px; color: rgba(255,255,255,0.8); }
+  .db-arrow { color: rgba(255,255,255,0.7); font-size: 16px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { background: white; display: flex; align-items: center; justify-content: space-around; padding: 8px 0 16px; flex-shrink: 0; border-top: 0.5px solid rgba(0,0,0,0.1); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 10px; }
+  .bn .i { font-size: 23px; opacity: 0.35; }
+  .bn .l { font-size: 10px; font-weight: 600; color: #8E8E93; letter-spacing: -0.2px; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #3DB240; font-weight: 700; }
+
+  .home-indicator { background: white; display: flex; justify-content: center; align-items: center; padding: 6px 0 8px; flex-shrink: 0; }
+  .home-bar { width: 130px; height: 5px; background: #1A1A1A; border-radius: 3px; opacity: 0.2; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(40,40,40,0.9); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* MODAL */
+  .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: none; align-items: flex-end; }
+  .overlay.open { display: flex; }
+  .sheet { width: 100%; background: white; border-radius: 20px 20px 0 0; padding: 16px 20px 32px; max-height: 75%; overflow-y: auto; scrollbar-width: none; animation: slideUp .28s ease; }
+  .sheet::-webkit-scrollbar { display: none; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-handle { width: 36px; height: 4px; background: #E0E0E0; border-radius: 2px; margin: 0 auto 14px; }
+  .sheet-title { font-size: 18px; font-weight: 800; color: #1A1A1A; margin-bottom: 14px; }
+  .sheet-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 0.5px solid #F2F2F7; }
+  .sheet-row:last-of-type { border-bottom: none; }
+  .sr-l .sr-name { font-size: 13px; font-weight: 600; color: #1A1A1A; }
+  .sr-l .sr-desc { font-size: 11px; color: #8E8E93; margin-top: 3px; }
+  .sr-r { text-align: right; }
+  .sr-val { font-size: 16px; font-weight: 800; color: #1A1A1A; }
+  .sr-delta { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-top: 4px; font-weight: 700; }
+  .sheet-close { width: 100%; padding: 15px; background: #3DB240; border: none; border-radius: 14px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+
+  .fade { opacity: 0; transform: translateY(10px); animation: fu .4s ease forwards; }
+  @keyframes fu { to { opacity: 1; transform: none; } }
+
+  /* ─── ORDERS SCREEN ─── */
+  .screen-header { padding: 16px 16px 4px; display: flex; align-items: center; justify-content: space-between; }
+  .screen-title { font-size: 20px; font-weight: 900; color: #1A1A1A; }
+  .screen-sub { font-size: 13px; color: #8E8E93; margin-top: 1px; }
+  .filter-row { display: flex; gap: 8px; padding: 10px 16px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .fchip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; background: white; color: #8E8E93; border: 1px solid #E5E5EA; flex-shrink: 0; }
+  .fchip.on { background: #252535; color: white; border-color: #252535; }
+  .orders-list { padding: 4px 16px 16px; }
+  .order-card { background: white; border-radius: 16px; padding: 14px; margin-bottom: 8px; }
+  .order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .order-num { font-size: 12px; font-weight: 700; color: #8E8E93; }
+  .ostatus { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .os-transit { background: #FFF3E0; color: #E65100; }
+  .os-process { background: #E3F2FD; color: #1565C0; }
+  .os-done { background: #E8F5E9; color: #2E7D32; }
+  .os-new { background: #F3E5F5; color: #6A1B9A; }
+  .order-name { font-size: 14px; font-weight: 700; color: #1A1A1A; margin-bottom: 3px; }
+  .order-meta { font-size: 12px; color: #8E8E93; }
+  .order-dates { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #F2F2F7; font-size: 12px; color: #8E8E93; }
+  .order-dates b { color: #1A1A1A; }
+
+  /* ─── RATING SCREEN ─── */
+  .rank-hero { background: linear-gradient(155deg, #252535 0%, #3A3A50 100%); border-radius: 20px; padding: 18px; margin-bottom: 10px; color: white; }
+  .rank-hero-row { display: flex; align-items: center; gap: 16px; }
+  .rank-place-big { font-size: 56px; font-weight: 900; line-height: 1; }
+  .rank-hero-right {}
+  .rank-hero-label { font-size: 13px; color: rgba(255,255,255,0.6); }
+  .rank-hero-name { font-size: 16px; font-weight: 800; margin-top: 2px; }
+  .rank-hero-pts { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .rank-hero-hint { font-size: 12px; color: #F4B731; margin-top: 12px; background: rgba(244,183,49,0.1); padding: 8px 12px; border-radius: 10px; line-height: 1.4; }
+  .lb-wrap { background: white; border-radius: 18px; overflow: hidden; margin-bottom: 10px; }
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #F2F2F7; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.me { background: #F0FBF0; }
+  .lb-pos { width: 24px; text-align: center; font-size: 16px; font-weight: 900; color: #C7C7CC; flex-shrink: 0; }
+  .lb-pos.t1 { color: #C8960C; }
+  .lb-pos.t2 { color: #6B7A8B; }
+  .lb-pos.t3 { color: #A0522D; }
+  .lb-name-wrap { flex: 1; min-width: 0; }
+  .lb-name-wrap b { display: block; font-size: 13px; font-weight: 700; color: #1A1A1A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-name-wrap span { font-size: 12px; color: #8E8E93; }
+  .lb-you { display: inline-block; font-size: 9px; font-weight: 800; background: #3DB240; color: white; padding: 1px 6px; border-radius: 5px; margin-left: 4px; }
+  .lb-score-wrap { text-align: right; flex-shrink: 0; }
+  .lb-score-wrap b { display: block; font-size: 14px; font-weight: 800; color: #1A1A1A; }
+  .lb-score-wrap span { font-size: 11px; color: #8E8E93; }
+  .lb-gap-up { font-size: 11px; color: #E65100; font-weight: 600; }
+  .lb-gap-dn { font-size: 11px; color: #3DB240; font-weight: 600; }
+
+  /* ─── PROFILE SCREEN ─── */
+  .profile-hero { background: white; border-radius: 20px; padding: 20px 16px; margin-bottom: 10px; text-align: center; }
+  .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(145deg, #252535, #3DB240); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: white; margin: 0 auto 12px; letter-spacing: -1px; }
+  .profile-name { font-size: 17px; font-weight: 800; color: #1A1A1A; }
+  .profile-inn { font-size: 12px; color: #8E8E93; margin-top: 3px; }
+  .profile-since { font-size: 12px; color: #3DB240; font-weight: 600; margin-top: 6px; display: inline-block; background: #E8F5E9; padding: 3px 10px; border-radius: 10px; }
+  .profile-cat { font-size: 12px; color: #8E8E93; margin-top: 8px; }
+  .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 16px; border-top: 1px solid #F2F2F7; padding-top: 14px; }
+  .pstat { text-align: center; border-right: 1px solid #F2F2F7; padding: 0 6px; }
+  .pstat:last-child { border-right: none; }
+  .pstat-n { font-size: 20px; font-weight: 900; color: #1A1A1A; }
+  .pstat-l { font-size: 11px; color: #8E8E93; margin-top: 2px; }
+  .profile-actions { background: white; border-radius: 18px; overflow: hidden; margin-bottom: 10px; }
+  .paction { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #F2F2F7; cursor: pointer; }
+  .paction:last-child { border-bottom: none; }
+  .paction:active { background: #F2F2F7; }
+  .paction-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .paction-label { flex: 1; font-size: 14px; font-weight: 600; color: #1A1A1A; }
+  .paction-arrow { color: #C7C7CC; font-size: 16px; }
+  .paction.danger .paction-label { color: #C62828; }
+  .plevel-badge { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #252535, #3A3A50); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+  .plevel-icon { font-size: 32px; }
+  .plevel-info b { display: block; font-size: 15px; font-weight: 800; color: white; }
+  .plevel-info span { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+  /* ─── SUPPORT CHAT ─── */
+  .chat-agent-head { background: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F2F2F7; flex-shrink: 0; position: sticky; top: 0; z-index: 5; }
+  .chat-av { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(145deg, #3DB240, #56CC59); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .chat-av-info b { display: block; font-size: 14px; font-weight: 700; color: #1A1A1A; }
+  .chat-av-info span { font-size: 11px; color: #3DB240; }
+  .chat-msgs { flex: 1; overflow-y: auto; padding: 12px 16px; scrollbar-width: none; display: flex; flex-direction: column; gap: 8px; }
+  .chat-msgs::-webkit-scrollbar { display: none; }
+  .cmsg { max-width: 76%; }
+  .cmsg.agent { align-self: flex-start; }
+  .cmsg.user { align-self: flex-end; }
+  .cmsg-text { padding: 9px 13px; border-radius: 16px; font-size: 13px; line-height: 1.45; }
+  .cmsg.agent .cmsg-text { background: white; color: #1A1A1A; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .cmsg.user .cmsg-text { background: #3DB240; color: white; border-radius: 16px 4px 16px 16px; }
+  .cmsg-time { font-size: 10px; color: #8E8E93; margin-top: 3px; }
+  .cmsg.user .cmsg-time { text-align: right; }
+  .chat-qr { padding: 8px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .chat-qr::-webkit-scrollbar { display: none; }
+  .qr-chip { padding: 7px 14px; background: #E8F5E9; color: #2A8A2D; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; flex-shrink: 0; border: 1px solid #C8E6C9; }
+  .chat-input-bar { padding: 8px 16px 12px; background: white; display: flex; gap: 10px; align-items: center; flex-shrink: 0; border-top: 1px solid #F2F2F7; }
+  .chat-input-bar input { flex: 1; border: 1px solid #E5E5EA; border-radius: 22px; padding: 9px 16px; font-size: 14px; outline: none; font-family: inherit; background: #F2F2F7; }
+  .chat-input-bar input:focus { border-color: #3DB240; background: white; }
+  .chat-send { width: 38px; height: 38px; background: #3DB240; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  /* ─── DOCS SCREEN ─── */
+  .doc-card { background: white; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; }
+  .doc-card:active { background: #F8F8F8; }
+  .doc-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .doc-info { flex: 1; min-width: 0; }
+  .doc-name { font-size: 14px; font-weight: 700; color: #1A1A1A; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-meta { font-size: 12px; color: #8E8E93; }
+  .doc-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; flex-shrink: 0; }
+  .doc-sign { background: #FFF3E0; color: #E65100; }
+  .doc-ok { background: #E8F5E9; color: #2E7D32; }
+  .doc-new { background: #E3F2FD; color: #1565C0; }
+
+  /* ─── WHEEL OVERLAY ─── */
+  .wheel-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.65); z-index: 400; display: flex; align-items: center; justify-content: center; }
+  .wheel-popup { background: white; border-radius: 28px; padding: 24px 20px 20px; width: 330px; text-align: center; position: relative; animation: popIn .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .wheel-close-btn { position: absolute; top: 14px; right: 16px; width: 28px; height: 28px; border-radius: 50%; background: #F2F2F7; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: #8E8E93; border: none; font-family: inherit; }
+  .wheel-title { font-size: 21px; font-weight: 900; color: #1A1A1A; margin-bottom: 4px; }
+  .wheel-sub { font-size: 13px; color: #8E8E93; margin-bottom: 16px; }
+  .wheel-container { position: relative; display: inline-block; margin-bottom: 16px; }
+  .wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 22px; z-index: 10; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); }
+  .wheel-spin-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #3DB240, #2A8A2D); border: none; border-radius: 14px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+  .wheel-spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .wheel-result { margin-top: 10px; font-size: 15px; color: #1A1A1A; min-height: 22px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span class="sb-time">12:32</span>
+    <div class="sb-icons">
+      <div class="sb-signal">
+        <span style="height:4px"></span><span style="height:6px"></span>
+        <span style="height:9px"></span><span style="height:12px"></span>
+      </div>
+      <span class="sb-wifi">📶</span>
+      <div class="sb-battery">
+        <div class="sb-battery-body"><div class="sb-battery-fill" style="width:17%"></div></div>
+        <div class="sb-battery-tip"></div>
+        <span class="sb-pct">7</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP HEADER -->
+  <div class="app-header">
+    <div class="header-row">
+      <div class="header-logo">
+        <div class="logo-leaf">🌿</div>
+        <div class="logo-text">
+          <div class="t1">ВкусВилл</div>
+          <div class="t2">Кабинет поставщика</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="hbtn" onclick="toast('Настройки')">⚙️</div>
+        <div class="hbtn" onclick="toast('Уведомления')">
+          🔔
+          <div class="hbtn-badge">4</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(this)">Главная</div>
+      <div class="tab" onclick="switchTab(this)">Заказы</div>
+      <div class="tab" onclick="switchTab(this)">Документы</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ ГЛАВНАЯ ══ -->
+    <div class="screen active" id="screen-home">
+      <div class="content-inner">
+        <div class="league-card fade" style="animation-delay:.05s">
+          <div class="lc-eyebrow">🏆 League поставщиков ВкусВилл</div>
+          <div class="lc-main">
+            <div class="lc-badge">
+              <div class="lc-badge-icon">💎</div>
+              <div class="lc-badge-lbl">Platinum</div>
+            </div>
+            <div class="lc-info">
+              <div class="lc-level">PLATINUM</div>
+              <div class="lc-desc">Ваши привилегии в ВкусВилл</div>
+              <div class="lc-score"><span class="lc-score-n">533</span><span class="lc-score-d">/ 800</span></div>
+              <div class="lc-stars">⭐⭐⭐⭐⭐</div>
+            </div>
+          </div>
+          <div class="lc-bar-wrap">
+            <div class="lc-bar-labels">
+              <span>+67 очков до Gold · 10 поставок без нарушений</span>
+              <span style="font-weight:700">66%</span>
+            </div>
+            <div class="lc-bar"><div class="lc-bar-fill" id="heroBar"></div></div>
+          </div>
+          <div class="lc-hint">⚡ Удержите уровень: поддерживайте <b>95%+ своевременных отгрузок</b> до конца периода</div>
+          <div class="lc-rank">
+            <div class="lc-rank-txt"><b>5-е среди всех поставщиков</b>Место в рейтинге</div>
+            <div class="lc-rank-bar"><div class="lc-rank-fill" id="rankBar"></div></div>
+            <div class="lc-rank-val">533/800</div>
+          </div>
+        </div>
+
+        <div class="score-pair fade" style="animation-delay:.12s">
+          <div class="score-block" onclick="openModal('service')">
+            <div class="sb-head"><div class="sb-dot sb-dot-g"></div><div class="sb-lbl">Service Score</div></div>
+            <div class="sb-num">372</div>
+            <div class="sb-of">из 560 · 70%</div>
+            <div class="sb-bar"><div class="sb-fill sb-fill-g" id="sBar"></div></div>
+            <div class="metric"><span class="m-name">Своевременность</span><div class="m-vals"><span class="delta d-up">92%</span></div></div>
+            <div class="metric"><span class="m-name">Штрафы</span><div class="m-vals"><span class="delta d-dn">−12</span></div></div>
+            <div class="sc-link">Подробнее →</div>
+          </div>
+          <div class="score-block" onclick="openModal('customer')">
+            <div class="sb-head"><div class="sb-dot sb-dot-y"></div><div class="sb-lbl">Customer Score</div></div>
+            <div class="sb-num">161</div>
+            <div class="sb-of">из 240 · 30%</div>
+            <div class="sb-bar"><div class="sb-fill sb-fill-y" id="cBar"></div></div>
+            <div class="metric"><span class="m-name">Оценка товаров</span><div class="m-vals"><span class="delta d-up">4.6★</span></div></div>
+            <div class="metric"><span class="m-name">Повт. покупки</span><div class="m-vals"><span class="delta d-up">+16</span></div></div>
+            <div class="sc-link">Подробнее →</div>
+          </div>
+        </div>
+
+        <div class="wcard fade" style="animation-delay:.18s">
+          <div class="wcard-title">Ваши привилегии <span class="pill pill-plat">💎 Platinum</span></div>
+          <div class="priv-row"><div class="pr-icon">🚀</div><div class="pr-body"><b>Fast Track запуск новинок</b><span>Новинки попадают на полку за 24 ч вместо 5–7 дней</span></div><div class="pr-check">✓</div></div>
+          <div class="priv-row"><div class="pr-icon">📣</div><div class="pr-body"><b>Приоритетное участие в промо</b><span>Первоочерёдный доступ к акциям и кешбэк-механикам</span></div><div class="pr-check">✓</div></div>
+          <div class="priv-row"><div class="pr-icon">👤</div><div class="pr-body"><b>Выделенный менеджер</b><span>Персональный закупщик + оперативная сверка</span></div><div class="pr-check">✓</div></div>
+          <div class="priv-row"><div class="pr-icon">📊</div><div class="pr-body"><b>Расширенная аналитика Sell-out</b><span>Причины негатива, сравнение с категорией, прогноз</span></div><div class="pr-check">✓</div></div>
+          <div class="priv-row"><div class="pr-icon">📦</div><div class="pr-body"><b>Приоритет в объёмах закупок</b><span>Преимущество при распределении квот</span></div><div class="pr-check">✓</div></div>
+        </div>
+
+        <div class="wcard fade" style="animation-delay:.23s">
+          <div class="wcard-title">Уровни лиги</div>
+          <div class="level-row" onclick="toggleLevel(this)"><div class="lr-ico bronze"><span>🥉</span></div><div class="lr-info"><div class="lr-top"><span class="lr-name">Bronze</span></div><div class="lr-req">0–299 очков · базовые условия</div><div class="lr-perks">✔ Базовая аналитика по продажам<br>✔ Стандартный приоритет закупок<br>✔ FAQ и гайд по требованиям</div></div><div class="lr-chevron">›</div></div>
+          <div class="level-row" onclick="toggleLevel(this)"><div class="lr-ico silver"><span>🥈</span></div><div class="lr-info"><div class="lr-top"><span class="lr-name">Silver</span></div><div class="lr-req">300–499 очков · перки эффективности</div><div class="lr-perks">✔ Приоритетные окна приёмки<br>✔ Продвинутая аналитика<br>✔ Участие в спецподборках</div></div><div class="lr-chevron">›</div></div>
+          <div class="level-row" onclick="toggleLevel(this)"><div class="lr-ico gold"><span>🥇</span></div><div class="lr-info"><div class="lr-top"><span class="lr-name">Gold</span></div><div class="lr-req">500–699 очков · приоритет роста</div><div class="lr-perks">✔ Приоритет на промо-акции<br>✔ Ускоренный запуск новинок<br>✔ Дополнительная квота на полке</div></div><div class="lr-chevron">›</div></div>
+          <div class="level-row active open" onclick="toggleLevel(this)"><div class="lr-ico plat"><span>💎</span></div><div class="lr-info"><div class="lr-top"><span class="lr-name">Platinum</span><span class="now-pill">Вы здесь</span></div><div class="lr-req">700+ очков · максимум привилегий</div><div class="lr-perks">✔ Fast Track новинок (24 ч)<br>✔ Приоритетное промо<br>✔ Выделенный менеджер<br>✔ Полный Sell-out</div></div><div class="lr-chevron">›</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ ЗАКАЗЫ ══ -->
+    <div class="screen" id="screen-orders">
+      <div class="screen-header">
+        <div>
+          <div class="screen-title">Заказы</div>
+          <div class="screen-sub">10 активных · 2 в обработке</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="fchip on" onclick="filterOrders(this,'all')">Все</div>
+        <div class="fchip" onclick="filterOrders(this,'transit')">В пути</div>
+        <div class="fchip" onclick="filterOrders(this,'process')">В обработке</div>
+        <div class="fchip" onclick="filterOrders(this,'done')">Выполнено</div>
+      </div>
+      <div class="orders-list" id="ordersList">
+        <div class="order-card" data-status="transit">
+          <div class="order-top"><span class="order-num">#ВВ-48291</span><span class="ostatus os-transit">🚛 В пути</span></div>
+          <div class="order-name">Гречка органическая</div>
+          <div class="order-meta">500 кг · 3 поддона · Бакалея</div>
+          <div class="order-dates"><span>Отгрузка: <b>24 фев</b></span><span>Приёмка: <b>28 фев</b></span></div>
+        </div>
+        <div class="order-card" data-status="process">
+          <div class="order-top"><span class="order-num">#ВВ-48288</span><span class="ostatus os-process">⏳ В обработке</span></div>
+          <div class="order-name">Молоко 3.2% ультрапастер.</div>
+          <div class="order-meta">200 шт · 4 паллеты · Молочное</div>
+          <div class="order-dates"><span>Создан: <b>25 фев</b></span><span>Срок: <b>2 марта</b></span></div>
+        </div>
+        <div class="order-card" data-status="transit">
+          <div class="order-top"><span class="order-num">#ВВ-48285</span><span class="ostatus os-transit">🚛 В пути</span></div>
+          <div class="order-name">Йогурт натуральный 2.5%</div>
+          <div class="order-meta">150 шт · 2 паллеты · Молочное</div>
+          <div class="order-dates"><span>Отгрузка: <b>23 фев</b></span><span>Приёмка: <b>27 фев</b></span></div>
+        </div>
+        <div class="order-card" data-status="process">
+          <div class="order-top"><span class="order-num">#ВВ-48279</span><span class="ostatus os-process">⏳ В обработке</span></div>
+          <div class="order-name">Овощной микс (заморозка)</div>
+          <div class="order-meta">300 кг · 2 поддона · Заморозка</div>
+          <div class="order-dates"><span>Создан: <b>24 фев</b></span><span>Срок: <b>1 марта</b></span></div>
+        </div>
+        <div class="order-card" data-status="transit">
+          <div class="order-top"><span class="order-num">#ВВ-48271</span><span class="ostatus os-transit">🚛 В пути</span></div>
+          <div class="order-name">Масло сливочное 82.5%</div>
+          <div class="order-meta">80 уп. · 1 паллета · Молочное</div>
+          <div class="order-dates"><span>Отгрузка: <b>22 фев</b></span><span>Приёмка: <b>26 фев</b></span></div>
+        </div>
+        <div class="order-card" data-status="done">
+          <div class="order-top"><span class="order-num">#ВВ-48265</span><span class="ostatus os-done">✅ Выполнено</span></div>
+          <div class="order-name">Творог 5% зернёный</div>
+          <div class="order-meta">100 шт · 1 паллета · Молочное</div>
+          <div class="order-dates"><span>Принят: <b>22 фев</b></span><span>Оценка: <b>⭐⭐⭐⭐⭐</b></span></div>
+        </div>
+        <div class="order-card" data-status="done">
+          <div class="order-top"><span class="order-num">#ВВ-48258</span><span class="ostatus os-done">✅ Выполнено</span></div>
+          <div class="order-name">Ряженка 4% 500мл</div>
+          <div class="order-meta">200 шт · 2 паллеты · Молочное</div>
+          <div class="order-dates"><span>Принят: <b>20 фев</b></span><span>Оценка: <b>⭐⭐⭐⭐</b></span></div>
+        </div>
+        <div class="order-card" data-status="transit">
+          <div class="order-top"><span class="order-num">#ВВ-48244</span><span class="ostatus os-transit">🚛 В пути</span></div>
+          <div class="order-name">Хлеб ржаной «Деревенский»</div>
+          <div class="order-meta">250 шт · 2 поддона · Хлебобул.</div>
+          <div class="order-dates"><span>Отгрузка: <b>25 фев</b></span><span>Приёмка: <b>26 фев</b></span></div>
+        </div>
+        <div class="order-card" data-status="done">
+          <div class="order-top"><span class="order-num">#ВВ-48230</span><span class="ostatus os-done">✅ Выполнено</span></div>
+          <div class="order-name">Квас натуральный 1.5л</div>
+          <div class="order-meta">120 бут. · 2 паллеты · Напитки</div>
+          <div class="order-dates"><span>Принят: <b>18 фев</b></span><span>Оценка: <b>⭐⭐⭐⭐⭐</b></span></div>
+        </div>
+        <div class="order-card" data-status="done">
+          <div class="order-top"><span class="order-num">#ВВ-48218</span><span class="ostatus os-done">✅ Выполнено</span></div>
+          <div class="order-name">Соки свежевыжатые 0.3л</div>
+          <div class="order-meta">90 шт · 1 паллета · Напитки</div>
+          <div class="order-dates"><span>Принят: <b>15 фев</b></span><span>Оценка: <b>⭐⭐⭐⭐⭐</b></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ РЕЙТИНГ ══ -->
+    <div class="screen" id="screen-rating">
+      <div class="content-inner">
+        <div class="rank-hero fade">
+          <div class="rank-hero-row">
+            <div class="rank-place-big">5</div>
+            <div class="rank-hero-right">
+              <div class="rank-hero-label">Ваше место из 847</div>
+              <div class="rank-hero-name">ООО «ОВК Продукты»</div>
+              <div class="rank-hero-pts">533 очка · Platinum</div>
+            </div>
+          </div>
+          <div class="rank-hero-hint">💡 Нужно +168 очков, чтобы обойти Органик Групп и занять 4-е место</div>
+        </div>
+
+        <div class="wcard-title" style="padding: 0 4px 10px;">Ближайшие конкуренты</div>
+        <div class="lb-wrap fade" style="animation-delay:.1s">
+          <div class="lb-row">
+            <div class="lb-pos t1">🥇</div>
+            <div class="lb-name-wrap"><b>ООО «АгроПрайм»</b><span>Бакалея, Крупы</span></div>
+            <div class="lb-score-wrap"><b>800</b><span class="lb-gap-up">+267 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos t2">🥈</div>
+            <div class="lb-name-wrap"><b>ИП «Молочные Поля»</b><span>Молочное</span></div>
+            <div class="lb-score-wrap"><b>782</b><span class="lb-gap-up">+249 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos t3">🥉</div>
+            <div class="lb-name-wrap"><b>ООО «Фермерский Союз»</b><span>Мясо, Птица</span></div>
+            <div class="lb-score-wrap"><b>771</b><span class="lb-gap-up">+238 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">4</div>
+            <div class="lb-name-wrap"><b>ООО «Органик Групп»</b><span>Овощи, Фрукты</span></div>
+            <div class="lb-score-wrap"><b>701</b><span class="lb-gap-up">+168 от вас</span></div>
+          </div>
+          <div class="lb-row me">
+            <div class="lb-pos" style="color:#3DB240;font-size:13px">5</div>
+            <div class="lb-name-wrap"><b>ООО «ОВК Продукты» <span class="lb-you">Вы</span></b><span>Бакалея, Молочное</span></div>
+            <div class="lb-score-wrap"><b style="color:#3DB240">533</b><span style="color:#3DB240;font-size:10px">💎 Platinum</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">6</div>
+            <div class="lb-name-wrap"><b>ИП «Свежий Дом»</b><span>Хлебобулочные</span></div>
+            <div class="lb-score-wrap"><b>489</b><span class="lb-gap-dn">−44 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">7</div>
+            <div class="lb-name-wrap"><b>ООО «Натурпродукт»</b><span>Молочное, Сыры</span></div>
+            <div class="lb-score-wrap"><b>461</b><span class="lb-gap-dn">−72 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">8</div>
+            <div class="lb-name-wrap"><b>ООО «Добрый Фермер»</b><span>Овощи, Зелень</span></div>
+            <div class="lb-score-wrap"><b>440</b><span class="lb-gap-dn">−93 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">9</div>
+            <div class="lb-name-wrap"><b>ИП «Эко Вкус»</b><span>Напитки, Соки</span></div>
+            <div class="lb-score-wrap"><b>412</b><span class="lb-gap-dn">−121 от вас</span></div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos" style="color:#1A1A1A;font-size:13px">10</div>
+            <div class="lb-name-wrap"><b>ООО «СвежеПрямо»</b><span>Заморозка</span></div>
+            <div class="lb-score-wrap"><b>388</b><span class="lb-gap-dn">−145 от вас</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПРОФИЛЬ ══ -->
+    <div class="screen" id="screen-profile">
+      <div class="content-inner">
+        <div class="profile-hero fade">
+          <div class="profile-avatar">ОВК</div>
+          <div class="profile-name">ООО «ОВК Продукты»</div>
+          <div class="profile-inn">ИНН 7724389512 · ОГРН 1197746312088</div>
+          <div class="profile-since">🌿 Партнёр ВкусВилл с 2021 года</div>
+          <div class="profile-cat">Категория: Бакалея · Молочное · Напитки</div>
+          <div class="profile-stats">
+            <div class="pstat"><div class="pstat-n">247</div><div class="pstat-l">заказов</div></div>
+            <div class="pstat"><div class="pstat-n">12.4м</div><div class="pstat-l">выручка ₽</div></div>
+            <div class="pstat"><div class="pstat-n">💎</div><div class="pstat-l">Platinum</div></div>
+          </div>
+        </div>
+
+        <div class="plevel-badge fade" style="animation-delay:.1s">
+          <div class="plevel-icon">💎</div>
+          <div class="plevel-info">
+            <b>Platinum · 533 очка</b>
+            <span>Уровень действует до 31 марта 2025</span>
+          </div>
+        </div>
+
+        <div class="profile-actions fade" style="animation-delay:.15s">
+          <div class="paction" onclick="toast('Редактирование профиля')">
+            <div class="paction-icon" style="background:#E8F5E9">📝</div>
+            <div class="paction-label">Редактировать профиль</div>
+            <div class="paction-arrow">›</div>
+          </div>
+          <div class="paction" onclick="toast('Вывод средств')">
+            <div class="paction-icon" style="background:#E3F2FD">💳</div>
+            <div class="paction-label">Вывести средства</div>
+            <div class="paction-arrow">›</div>
+          </div>
+          <div class="paction" onclick="toast('Ваш менеджер: Елена Соколова')">
+            <div class="paction-icon" style="background:#F3E5F5">📞</div>
+            <div class="paction-label">Мой менеджер</div>
+            <div class="paction-arrow">›</div>
+          </div>
+          <div class="paction" onclick="goTab('rating')">
+            <div class="paction-icon" style="background:#FFF3E0">📈</div>
+            <div class="paction-label">Посмотреть рейтинг</div>
+            <div class="paction-arrow">›</div>
+          </div>
+          <div class="paction" onclick="toast('Документы и договоры')">
+            <div class="paction-icon" style="background:#F2F2F7">📄</div>
+            <div class="paction-label">Документы и договоры</div>
+            <div class="paction-arrow">›</div>
+          </div>
+          <div class="paction danger" onclick="toast('Выход из аккаунта')">
+            <div class="paction-icon" style="background:#FFEBEE">🚪</div>
+            <div class="paction-label">Выйти из аккаунта</div>
+            <div class="paction-arrow">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ДОКУМЕНТЫ ══ -->
+    <div class="screen" id="screen-docs">
+      <div class="screen-header">
+        <div>
+          <div class="screen-title">Документы</div>
+          <div class="screen-sub">12 документов · 2 требуют подписи</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="fchip on">Все</div>
+        <div class="fchip">Требуют подписи</div>
+        <div class="fchip">Договоры</div>
+        <div class="fchip">Акты</div>
+      </div>
+      <div style="padding: 4px 16px 16px;">
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#FFF3E0">📝</div>
+          <div class="doc-info"><div class="doc-name">Акт сверки за февраль 2025</div><div class="doc-meta">ВкусВилл · 24 фев 2025</div></div>
+          <div class="doc-badge doc-sign">Подпись</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#FFF3E0">📋</div>
+          <div class="doc-info"><div class="doc-name">Счёт-фактура №ВВ-2025-0218</div><div class="doc-meta">ВкусВилл · 18 фев 2025 · 112 400 ₽</div></div>
+          <div class="doc-badge doc-sign">Подпись</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E3F2FD">📄</div>
+          <div class="doc-info"><div class="doc-name">Договор поставки №2025-047</div><div class="doc-meta">ВкусВилл · 1 янв 2025</div></div>
+          <div class="doc-badge doc-new">Новый</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E8F5E9">✅</div>
+          <div class="doc-info"><div class="doc-name">Акт приёмки #ВВ-48265</div><div class="doc-meta">ВкусВилл · 22 фев 2025</div></div>
+          <div class="doc-badge doc-ok">Подписан</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E8F5E9">✅</div>
+          <div class="doc-info"><div class="doc-name">Акт приёмки #ВВ-48258</div><div class="doc-meta">ВкусВилл · 20 фев 2025</div></div>
+          <div class="doc-badge doc-ok">Подписан</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E8F5E9">✅</div>
+          <div class="doc-info"><div class="doc-name">Акт сверки за январь 2025</div><div class="doc-meta">ВкусВилл · 31 янв 2025</div></div>
+          <div class="doc-badge doc-ok">Подписан</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E8F5E9">✅</div>
+          <div class="doc-info"><div class="doc-name">Счёт-фактура №ВВ-2025-0131</div><div class="doc-meta">ВкусВилл · 31 янв 2025 · 98 700 ₽</div></div>
+          <div class="doc-badge doc-ok">Подписан</div>
+        </div>
+        <div class="doc-card" onclick="toast('Открыть документ')">
+          <div class="doc-icon" style="background:#E8F5E9">✅</div>
+          <div class="doc-info"><div class="doc-name">Акт приёмки #ВВ-48230</div><div class="doc-meta">ВкусВилл · 18 фев 2025</div></div>
+          <div class="doc-badge doc-ok">Подписан</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПОДДЕРЖКА ══ -->
+    <div class="screen" id="screen-support">
+      <div class="chat-agent-head">
+        <div class="chat-av">🌿</div>
+        <div class="chat-av-info">
+          <b>Мария · Поддержка ВкусВилл</b>
+          <span>● Онлайн · Отвечаем за 5 минут</span>
+        </div>
+      </div>
+      <div class="chat-msgs" id="chatMsgs">
+        <div class="cmsg agent">
+          <div class="cmsg-text">Здравствуйте! Я Мария, специалист службы поддержки ВкусВилл для поставщиков. Рада помочь! 👋</div>
+          <div class="cmsg-time">12:10</div>
+        </div>
+        <div class="cmsg agent">
+          <div class="cmsg-text">Ваш статус — <b>Platinum</b>. Как приоритетный партнёр вы получаете ответы в первую очередь. Чем могу помочь?</div>
+          <div class="cmsg-time">12:10</div>
+        </div>
+        <div class="cmsg user">
+          <div class="cmsg-text">Хочу уточнить статус заказа #ВВ-48291</div>
+          <div class="cmsg-time">12:28</div>
+        </div>
+        <div class="cmsg agent">
+          <div class="cmsg-text">Заказ #ВВ-48291 (Гречка органическая, 500 кг) находится в пути. По данным логистики — прибытие на РЦ <b>28 февраля</b>. Всё идёт по плану ✅</div>
+          <div class="cmsg-time">12:29</div>
+        </div>
+      </div>
+      <div class="chat-qr">
+        <div class="qr-chip" onclick="sendQR('Статус заказа')">Статус заказа</div>
+        <div class="qr-chip" onclick="sendQR('Вопрос по рейтингу')">По рейтингу</div>
+        <div class="qr-chip" onclick="sendQR('Нужны документы')">Документы</div>
+        <div class="qr-chip" onclick="sendQR('Другое')">Другое</div>
+      </div>
+      <div class="chat-input-bar">
+        <input type="text" id="chatInput" placeholder="Напишите сообщение..." />
+        <button class="chat-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+
+  </div><!-- end .content -->
+
+  <!-- GREEN BANNER -->
+  <div class="delivery-banner" onclick="toast('Подробнее о привилегиях Platinum')">
+    <div class="db-text">
+      <b>Уровень Platinum · до 31 марта</b>
+      <span>Все привилегии активны →</span>
+    </div>
+    <div class="db-arrow">›</div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="bn on" id="bn-home" onclick="goTab('home')">
+      <div class="i">🗂️</div><div class="l">Главная</div>
+    </div>
+    <div class="bn" id="bn-orders" onclick="goTab('orders')">
+      <div class="i">📦</div><div class="l">Заказы</div>
+    </div>
+    <div class="bn" id="bn-rating" onclick="goTab('rating')">
+      <div class="i">🏆</div><div class="l">Рейтинг</div>
+    </div>
+    <div class="bn" id="bn-profile" onclick="goTab('profile')">
+      <div class="i">👤</div><div class="l">Профиль</div>
+    </div>
+    <div class="bn" id="bn-support" onclick="goTab('support')">
+      <div class="i">💬</div><div class="l">Поддержка</div>
+    </div>
+  </div>
+
+  <!-- HOME INDICATOR -->
+  <div class="home-indicator"><div class="home-bar"></div></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toastEl"></div>
+
+  <!-- MODAL -->
+  <div class="overlay" id="overlay" onclick="maybeClose(event)">
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="sheetTitle"></div>
+      <div id="sheetBody"></div>
+      <button class="sheet-close" onclick="closeModal()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- WHEEL OVERLAY -->
+  <div class="wheel-overlay" id="wheelOverlay">
+    <div class="wheel-popup">
+      <button class="wheel-close-btn" onclick="closeWheel()">✕</button>
+      <div class="wheel-title">🎡 Колесо удачи!</div>
+      <div class="wheel-sub">Покрутите и выиграйте бонус</div>
+      <div class="wheel-container">
+        <div class="wheel-pointer">▼</div>
+        <canvas id="wheelCanvas" width="260" height="260" style="border-radius:50%;display:block"></canvas>
+      </div>
+      <button class="wheel-spin-btn" id="wheelBtn" onclick="spinWheel()">Крутить!</button>
+      <div class="wheel-result" id="wheelResult"></div>
+    </div>
+  </div>
+
+</div><!-- end .phone -->
+
+<script>
+  // ─── TAB NAVIGATION ───
+  function goTab(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+    document.getElementById('screen-' + name).classList.add('active');
+    const bnEl = document.getElementById('bn-' + name);
+    if (bnEl) bnEl.classList.add('on');
+    // Sync header tabs
+    const tabMap = { home: 'Главная', orders: 'Заказы', docs: 'Документы' };
+    if (tabMap[name]) {
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.textContent.trim() === tabMap[name]);
+      });
+    }
+    if (name === 'home') {
+      setTimeout(() => {
+        document.getElementById('heroBar').style.width = '66%';
+        document.getElementById('rankBar').style.width = '82%';
+        document.getElementById('sBar').style.width = '66%';
+        document.getElementById('cBar').style.width = '67%';
+      }, 100);
+    }
+    if (name === 'support') {
+      setTimeout(() => {
+        const m = document.getElementById('chatMsgs');
+        m.scrollTop = m.scrollHeight;
+      }, 100);
+    }
+  }
+
+  // ─── HEADER TABS ───
+  function switchTab(el) {
+    const txt = el.textContent.trim();
+    if (txt === 'Заказы') goTab('orders');
+    else if (txt === 'Документы') goTab('docs');
+    else goTab('home');
+  }
+
+  // ─── ORDER FILTER ───
+  function filterOrders(chip, filter) {
+    document.querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    document.querySelectorAll('.order-card').forEach(card => {
+      card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+    });
+  }
+
+  // ─── LEVELS ───
+  function toggleLevel(el) { el.classList.toggle('open'); }
+
+  // ─── TOAST ───
+  function toast(msg) {
+    const t = document.getElementById('toastEl');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ─── CHAT ───
+  function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    const msgs = document.getElementById('chatMsgs');
+    const now = new Date();
+    const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    msgs.innerHTML += `<div class="cmsg user"><div class="cmsg-text">${msg}</div><div class="cmsg-time">${time}</div></div>`;
+    input.value = '';
+    msgs.scrollTop = msgs.scrollHeight;
+    setTimeout(() => {
+      msgs.innerHTML += `<div class="cmsg agent"><div class="cmsg-text">Спасибо за обращение! Проверю информацию и отвечу в ближайшее время 🙂</div><div class="cmsg-time">${time}</div></div>`;
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 1200);
+  }
+
+  function sendQR(text) {
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  // ─── MODALS ───
+  const modals = {
+    service: {
+      title: '🟢 Service Score — детали',
+      rows: [
+        { name:'Своевременность отгрузок', desc:'Доля поставок в срок vs. плановой дате', val:'24+50 пост.', delta:'+220', up:true },
+        { name:'Качество отгрузки', desc:'Документы, упаковка, % брака', val:'3.8/5.0', delta:'+35', up:true },
+        { name:'Success Rate', desc:'% исполненных заказов без отмен', val:'95% / 92', delta:'+45', up:true },
+        { name:'Запущено новинок', desc:'Новые SKU за период', val:'35→62', delta:'+30', up:true },
+        { name:'Штрафы / корректировки', desc:'Нарушения, пересорт, просрочки', val:'+8', delta:'−12', up:false },
+      ]
+    },
+    customer: {
+      title: '🟡 Customer Score — детали',
+      rows: [
+        { name:'Средняя оценка товаров', desc:'Рейтинг по всем SKU поставщика', val:'4.6 ★', delta:'+60', up:true },
+        { name:'Количество отзывов', desc:'Покупательские отзывы за период', val:'50 отзывов', delta:'+40', up:true },
+        { name:'Повторные покупки', desc:'Покупатели, вернувшиеся за повторным заказом', val:'48 корзин', delta:'+16', up:true },
+        { name:'Выбран «Товаром месяца»', desc:'Попадание в механику кешбэка', val:'×3 раза', delta:'+43', up:true },
+        { name:'Товар недели', desc:'Попадание в подборку повышенного кешбэка', val:'+30', delta:'+45', up:true },
+      ]
+    }
+  };
+
+  function openModal(type) {
+    const d = modals[type];
+    document.getElementById('sheetTitle').textContent = d.title;
+    document.getElementById('sheetBody').innerHTML = d.rows.map(r => `
+      <div class="sheet-row">
+        <div class="sr-l"><div class="sr-name">${r.name}</div><div class="sr-desc">${r.desc}</div></div>
+        <div class="sr-r"><div class="sr-val">${r.val}</div><div class="sr-delta ${r.up ? 'd-up' : 'd-dn'}">${r.delta}</div></div>
+      </div>`).join('');
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+  function maybeClose(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+  // ─── WHEEL ───
+  const prizes = [
+    { label: '+50 очков',   color: '#3DB240' },
+    { label: 'Скидка 5%',  color: '#F4B731' },
+    { label: 'Месяц PRO',  color: '#2A8A2D' },
+    { label: '+100 очков', color: '#FF8C00' },
+    { label: 'Скидка 10%', color: '#56CC59' },
+    { label: 'Новинка 🎁', color: '#E65100' },
+    { label: '+25 очков',  color: '#388E3C' },
+    { label: 'Удача!',     color: '#D4900A' },
+  ];
+  let wAngle = 0;
+  let wSpinning = false;
+
+  function drawWheel(angle) {
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = 130, cy = 130, r = 125;
+    const seg = (2 * Math.PI) / prizes.length;
+    ctx.clearRect(0, 0, 260, 260);
+
+    prizes.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, angle + i * seg, angle + (i + 1) * seg);
+      ctx.closePath();
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle + i * seg + seg / 2);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(p.label, r - 10, 4);
+      ctx.restore();
+    });
+
+    // Center circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.strokeStyle = '#E0E0E0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = '18px serif';
+    ctx.textAlign = 'center';
+    ctx.shadowBlur = 0;
+    ctx.fillText('🌿', cx, cy + 6);
+  }
+
+  function spinWheel() {
+    if (wSpinning) return;
+    wSpinning = true;
+    const btn = document.getElementById('wheelBtn');
+    btn.disabled = true;
+    document.getElementById('wheelResult').textContent = '';
+
+    const spinDeg = 1440 + Math.random() * 720;
+    const targetAngle = wAngle + spinDeg * Math.PI / 180;
+    const start = performance.now();
+    const startAngle = wAngle;
+    const duration = 4200;
+
+    function animate(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 4);
+      wAngle = startAngle + (targetAngle - startAngle) * eased;
+      drawWheel(wAngle);
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        wAngle = targetAngle;
+        drawWheel(wAngle);
+        // Find winner: pointer at top = -π/2 in canvas coords
+        const seg = (2 * Math.PI) / prizes.length;
+        let ptr = (-Math.PI / 2 - wAngle) % (2 * Math.PI);
+        if (ptr < 0) ptr += 2 * Math.PI;
+        const winIdx = Math.floor(ptr / seg) % prizes.length;
+        const winner = prizes[winIdx];
+        document.getElementById('wheelResult').innerHTML = `🎉 Вы выиграли: <b>${winner.label}</b>!`;
+        btn.textContent = 'Забрать и закрыть';
+        btn.disabled = false;
+        btn.onclick = closeWheel;
+        wSpinning = false;
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function closeWheel() {
+    document.getElementById('wheelOverlay').style.display = 'none';
+  }
+
+  // ─── INIT ───
+  window.addEventListener('load', () => {
+    // Animate home bars
+    setTimeout(() => {
+      document.getElementById('heroBar').style.width = '66%';
+      document.getElementById('rankBar').style.width = '82%';
+      document.getElementById('sBar').style.width = '66%';
+      document.getElementById('cBar').style.width = '67%';
+    }, 350);
+
+    // Draw wheel
+    drawWheel(0);
+
+    // Show wheel popup after short delay
+    setTimeout(() => {
+      document.getElementById('wheelOverlay').style.display = 'flex';
+    }, 1200);
+  });
+</script>
+</body>
+</html>

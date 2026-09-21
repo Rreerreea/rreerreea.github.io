@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АПРИ.Бонус — Кэшбек в квартиру</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #C8C8CC; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12); display: flex; flex-direction: column; background: #F0F4F8; position: relative; }
+
+  /* STATUS BAR (removed) */
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(135deg, #1B2B4B 0%, #2A4A7F 100%); padding: 28px 20px 24px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .hdr-logo { display: flex; align-items: center; gap: 10px; }
+  .hdr-logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #38BDF8, #10B981); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .hdr-logo b { font-size: 17px; font-weight: 800; color: white; }
+  .hdr-logo span { font-size: 11px; color: rgba(255,255,255,0.5); display: block; margin-top: 1px; }
+  .hdr-actions { display: flex; gap: 10px; }
+  .hdr-btn { width: 36px; height: 36px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; position: relative; }
+  .hdr-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #F43F5E; border-radius: 50%; font-size: 8px; font-weight: 800; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid #1B2B4B; }
+
+  /* BALANCE HERO */
+  .bal-hero { background: white; margin: 12px 16px 0; border-radius: 20px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; z-index: 2; }
+  .bal-label { font-size: 12px; color: #8E8E93; font-weight: 600; margin-bottom: 4px; }
+  .bal-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+  .bal-num { font-size: 36px; font-weight: 900; color: #1A1A2E; line-height: 1; }
+  .bal-cur { font-size: 14px; color: #8E8E93; font-weight: 600; }
+  .bal-sub { font-size: 12px; color: #10B981; font-weight: 600; }
+  .bal-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .bal-act { flex: 1; padding: 10px; border-radius: 12px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .bal-act-prim { background: linear-gradient(135deg, #2A4A7F, #38BDF8); color: white; }
+  .bal-act-sec { background: #F0F4F8; color: #2A4A7F; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  #s-support { display: none; flex-direction: column; }
+  #s-support.active { display: flex; }
+  .ci { padding: 12px 16px; }
+
+  /* CARDS */
+  .wc { background: white; border-radius: 18px; padding: 16px; margin-bottom: 10px; }
+  .wc-title { font-size: 16px; font-weight: 800; color: #1A1A2E; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .wc-link { font-size: 12px; color: #2A4A7F; font-weight: 700; cursor: pointer; }
+
+  /* FRIEND PROGRESS */
+  .friend-card { background: #F8FAFC; border-radius: 14px; padding: 12px; margin-bottom: 8px; }
+  .friend-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .friend-ava { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: white; flex-shrink: 0; }
+  .friend-info { flex: 1; min-width: 0; }
+  .friend-name { font-size: 14px; font-weight: 700; color: #1A1A2E; }
+  .friend-status { font-size: 11px; color: #8E8E93; }
+  .friend-earned { font-size: 13px; font-weight: 800; color: #10B981; flex-shrink: 0; }
+  .friend-steps { display: flex; gap: 4px; }
+  .fstep { flex: 1; height: 4px; border-radius: 2px; background: #E2E8F0; }
+  .fstep.done { background: #10B981; }
+  .fstep.cur { background: #38BDF8; }
+
+  /* INVITE BLOCK */
+  .invite-block { background: linear-gradient(135deg, #2A4A7F 0%, #1B2B4B 100%); border-radius: 18px; padding: 16px; margin-bottom: 10px; color: white; }
+  .invite-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+  .invite-desc { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 12px; line-height: 1.4; }
+  .invite-code { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; cursor: pointer; }
+  .invite-code span { flex: 1; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+  .invite-code em { font-size: 12px; font-style: normal; color: rgba(255,255,255,0.5); }
+  .invite-share { display: flex; gap: 8px; }
+  .share-btn { flex: 1; padding: 9px; border-radius: 10px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .sh-wa { background: #25D366; color: white; }
+  .sh-tg { background: #0088CC; color: white; }
+  .sh-lnk { background: rgba(255,255,255,0.15); color: white; }
+
+  /* FUNNEL */
+  .funnel-step { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0F4F8; }
+  .funnel-step:last-child { border-bottom: none; }
+  .fs-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .fs-info { flex: 1; }
+  .fs-name { font-size: 13px; font-weight: 700; color: #1A1A2E; }
+  .fs-desc { font-size: 11px; color: #8E8E93; }
+  .fs-bonus { font-size: 14px; font-weight: 800; color: #10B981; flex-shrink: 0; }
+
+  /* VITRINA (SHOP) */
+  .vit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vit-item { background: #F8FAFC; border-radius: 14px; padding: 14px; cursor: pointer; text-align: center; transition: transform 0.12s; }
+  .vit-item:active { transform: scale(0.97); }
+  .vit-icon { font-size: 32px; margin-bottom: 6px; }
+  .vit-name { font-size: 13px; font-weight: 700; color: #1A1A2E; margin-bottom: 3px; }
+  .vit-limit { font-size: 11px; color: #8E8E93; }
+  .vit-price { font-size: 14px; font-weight: 800; color: #2A4A7F; margin-top: 6px; }
+
+  /* HISTORY */
+  .txn-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #F0F4F8; cursor: pointer; }
+  .txn-row:last-child { border-bottom: none; }
+  .txn-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-name { font-size: 13px; font-weight: 700; color: #1A1A2E; }
+  .txn-date { font-size: 11px; color: #8E8E93; }
+  .txn-amt { font-size: 14px; font-weight: 800; flex-shrink: 0; }
+  .txn-plus { color: #10B981; }
+  .txn-minus { color: #F43F5E; }
+
+  /* PROFILE */
+  .prof-hero { background: white; border-radius: 20px; padding: 20px; margin-bottom: 10px; text-align: center; }
+  .prof-ava { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #2A4A7F, #38BDF8); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: white; margin: 0 auto 12px; }
+  .prof-name { font-size: 18px; font-weight: 800; color: #1A1A2E; }
+  .prof-sub { font-size: 12px; color: #8E8E93; margin-top: 3px; }
+  .prof-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #2A4A7F; background: #E0E7FF; padding: 3px 10px; border-radius: 10px; margin-top: 8px; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 14px; border-top: 1px solid #F0F4F8; padding-top: 12px; }
+  .ps { text-align: center; border-right: 1px solid #F0F4F8; }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 20px; font-weight: 900; color: #1A1A2E; }
+  .ps-l { font-size: 10px; color: #8E8E93; margin-top: 2px; }
+  .prof-actions { background: white; border-radius: 18px; overflow: hidden; margin-bottom: 10px; }
+  .pact { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #F0F4F8; cursor: pointer; }
+  .pact:last-child { border-bottom: none; }
+  .pact:active { background: #F8FAFC; }
+  .pact-i { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .pact-l { flex: 1; font-size: 14px; font-weight: 600; color: #1A1A2E; }
+  .pact-a { color: #C7C7CC; font-size: 16px; }
+  .pact.danger .pact-l { color: #F43F5E; }
+
+  /* BOTTOM NAV */
+  .bnav { background: white; display: flex; align-items: center; justify-content: space-around; padding: 8px 0 16px; flex-shrink: 0; border-top: 0.5px solid rgba(0,0,0,0.1); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 8px; }
+  .bn .i { font-size: 22px; opacity: 0.35; }
+  .bn .l { font-size: 10px; font-weight: 600; color: #8E8E93; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #2A4A7F; font-weight: 700; }
+  .home-ind { background: white; display: flex; justify-content: center; padding: 6px 0 8px; flex-shrink: 0; }
+  .home-bar { width: 130px; height: 5px; background: #1A1A2E; border-radius: 3px; opacity: 0.2; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(30,30,30,0.92); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .fade { opacity: 0; transform: translateY(8px); animation: fu .4s ease forwards; }
+  @keyframes fu { to { opacity: 1; transform: none; } }
+
+  /* SUPPORT CHAT */
+  .ch-head { background: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0F4F8; flex-shrink: 0; position: sticky; top: 0; z-index: 5; }
+  .ch-ava { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #2A4A7F, #38BDF8); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .ch-info b { display: block; font-size: 14px; font-weight: 700; color: #1A1A2E; }
+  .ch-info span { font-size: 11px; color: #10B981; }
+  .ch-msgs { flex: 1; overflow-y: auto; padding: 12px 16px; scrollbar-width: none; display: flex; flex-direction: column; gap: 8px; }
+  .ch-msgs::-webkit-scrollbar { display: none; }
+  .cm { max-width: 76%; }
+  .cm.ag { align-self: flex-start; }
+  .cm.me { align-self: flex-end; }
+  .cm-t { padding: 9px 13px; border-radius: 16px; font-size: 13px; line-height: 1.45; }
+  .cm.ag .cm-t { background: white; color: #1A1A2E; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .cm.me .cm-t { background: #2A4A7F; color: white; border-radius: 16px 4px 16px 16px; }
+  .cm-d { font-size: 10px; color: #8E8E93; margin-top: 3px; }
+  .cm.me .cm-d { text-align: right; }
+  .ch-qr { padding: 8px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .ch-qr::-webkit-scrollbar { display: none; }
+  .qr { padding: 7px 14px; background: #E0E7FF; color: #2A4A7F; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+  .ch-inp { padding: 8px 16px 12px; background: white; display: flex; gap: 10px; align-items: center; flex-shrink: 0; border-top: 1px solid #F0F4F8; }
+  .ch-inp input { flex: 1; border: 1px solid #E2E8F0; border-radius: 22px; padding: 9px 16px; font-size: 14px; outline: none; font-family: inherit; background: #F8FAFC; }
+  .ch-inp input:focus { border-color: #2A4A7F; background: white; }
+  .ch-send { width: 38px; height: 38px; background: #2A4A7F; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  /* MOBILE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #F0F4F8; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+    .sbar { height: 44px; padding: 0 20px 6px; }
+    .home-ind { padding: 4px 0 6px; }
+    .toast { bottom: 100px; }
+  }
+  @media (max-width: 375px) {
+    .bal-num { font-size: 30px; }
+    .bal-act { font-size: 11px; padding: 9px 6px; }
+    .ci { padding: 10px 12px; }
+    .wc { padding: 14px; }
+    .funnel-step { gap: 10px; }
+    .fs-icon { width: 32px; height: 32px; font-size: 16px; }
+    .fs-bonus { font-size: 13px; }
+    .vit-grid { gap: 8px; }
+    .vit-item { padding: 10px; }
+    .vit-icon { font-size: 26px; }
+    .friend-ava { width: 34px; height: 34px; font-size: 14px; }
+    .prof-ava { width: 60px; height: 60px; font-size: 22px; }
+    .prof-name { font-size: 16px; }
+    .ps-n { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+
+  <div class="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-logo">
+        <div class="hdr-logo-icon">🏠</div>
+        <div><b>АПРИ.Бонус</b><span>Кэшбек в квартиру</span></div>
+      </div>
+      <div class="hdr-actions">
+        <div class="hdr-btn" onclick="toast('Настройки')">⚙️</div>
+        <div class="hdr-btn" onclick="toast('Уведомления')">🔔<div class="hdr-badge">3</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ ГЛАВНАЯ ══ -->
+    <div class="screen active" id="s-home">
+      <div style="padding:0 16px 12px">
+        <div class="bal-hero fade">
+          <div class="bal-label">Ваш баланс баллов</div>
+          <div class="bal-row">
+            <span class="bal-num" id="balNum">415 000</span>
+            <span class="bal-cur">₽</span>
+          </div>
+          <div class="bal-sub">+300 000 за последний месяц</div>
+          <div class="bal-actions">
+            <div class="bal-act bal-act-prim" onclick="goTab('ref')">Пригласить друга</div>
+            <div class="bal-act bal-act-sec" onclick="goTab('shop')">Потратить баллы</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ci">
+        <div class="wc fade" style="animation-delay:.08s">
+          <div class="wc-title">Как заработать <span class="wc-link" onclick="goTab('ref')">Все →</span></div>
+          <div class="funnel-step">
+            <div class="fs-icon" style="background:#ECFDF5">📝</div>
+            <div class="fs-info"><div class="fs-name">Друг оставил заявку</div><div class="fs-desc">Регистрация на сайте</div></div>
+            <div class="fs-bonus">+5 000 ₽</div>
+          </div>
+          <div class="funnel-step">
+            <div class="fs-icon" style="background:#EFF6FF">🏢</div>
+            <div class="fs-info"><div class="fs-name">Друг посетил офис</div><div class="fs-desc">Визит в офис продаж</div></div>
+            <div class="fs-bonus">+10 000 ₽</div>
+          </div>
+          <div class="funnel-step">
+            <div class="fs-icon" style="background:#FEF3C7">👀</div>
+            <div class="fs-info"><div class="fs-name">Друг посмотрел квартиру</div><div class="fs-desc">Показ квартиры</div></div>
+            <div class="fs-bonus">+15 000 ₽</div>
+          </div>
+          <div class="funnel-step">
+            <div class="fs-icon" style="background:#FCE7F3">🎉</div>
+            <div class="fs-info"><div class="fs-name">Друг купил квартиру</div><div class="fs-desc">Подписание договора</div></div>
+            <div class="fs-bonus">+300 000 ₽</div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.14s">
+          <div class="wc-title">Мои друзья <span class="wc-link" onclick="goTab('ref')">Все 3 →</span></div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#F43F5E,#FB923C)">АД</div>
+              <div class="friend-info"><div class="friend-name">Артём Давыдов</div><div class="friend-status">Купил квартиру · 15 фев</div></div>
+              <div class="friend-earned">+330 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep done"></div><div class="fstep done"></div><div class="fstep done"></div></div>
+          </div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)">ОК</div>
+              <div class="friend-info"><div class="friend-name">Ольга Кузнецова</div><div class="friend-status">Посетила офис · 22 фев</div></div>
+              <div class="friend-earned">+15 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep done"></div><div class="fstep cur"></div><div class="fstep"></div></div>
+          </div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#38BDF8,#818CF8)">ДП</div>
+              <div class="friend-info"><div class="friend-name">Дмитрий Петров</div><div class="friend-status">Оставил заявку · 26 фев</div></div>
+              <div class="friend-earned">+5 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep"></div><div class="fstep"></div><div class="fstep"></div></div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.2s">
+          <div class="wc-title">Витрина партнёров <span class="wc-link" onclick="goTab('shop')">Все →</span></div>
+          <div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px">
+            <div style="min-width:120px;background:#F8FAFC;border-radius:14px;padding:12px;text-align:center;cursor:pointer" onclick="goTab('shop')">
+              <div style="font-size:28px;margin-bottom:4px">🔧</div>
+              <div style="font-size:12px;font-weight:700;color:#1A1A2E">Ремонт</div>
+              <div style="font-size:11px;color:#8E8E93">до 500 000 ₽</div>
+            </div>
+            <div style="min-width:120px;background:#F8FAFC;border-radius:14px;padding:12px;text-align:center;cursor:pointer" onclick="goTab('shop')">
+              <div style="font-size:28px;margin-bottom:4px">🛋</div>
+              <div style="font-size:12px;font-weight:700;color:#1A1A2E">Мебель</div>
+              <div style="font-size:11px;color:#8E8E93">до 200 000 ₽</div>
+            </div>
+            <div style="min-width:120px;background:#F8FAFC;border-radius:14px;padding:12px;text-align:center;cursor:pointer" onclick="goTab('shop')">
+              <div style="font-size:28px;margin-bottom:4px">📱</div>
+              <div style="font-size:12px;font-weight:700;color:#1A1A2E">Техника</div>
+              <div style="font-size:11px;color:#8E8E93">до 150 000 ₽</div>
+            </div>
+            <div style="min-width:120px;background:#F8FAFC;border-radius:14px;padding:12px;text-align:center;cursor:pointer" onclick="goTab('shop')">
+              <div style="font-size:28px;margin-bottom:4px">🏦</div>
+              <div style="font-size:12px;font-weight:700;color:#1A1A2E">Ипотека</div>
+              <div style="font-size:11px;color:#8E8E93">−0.5% ставки</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ РЕФЕРАЛЫ ══ -->
+    <div class="screen" id="s-ref">
+      <div class="ci">
+        <div class="invite-block fade">
+          <div class="invite-title">Приглашайте друзей — получайте до 330 000 ₽</div>
+          <div class="invite-desc">За каждого друга, который купит квартиру, вы получите бонусы на улучшение своей квартиры</div>
+          <div class="invite-code" onclick="toast('Код скопирован!')">
+            <span>MARIA-2025</span>
+            <em>Скопировать</em>
+          </div>
+          <div class="invite-share">
+            <div class="share-btn sh-wa" onclick="toast('WhatsApp')">WhatsApp</div>
+            <div class="share-btn sh-tg" onclick="toast('Telegram')">Telegram</div>
+            <div class="share-btn sh-lnk" onclick="toast('Ссылка скопирована')">Ссылка</div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.08s">
+          <div class="wc-title">Прогресс начислений</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <div style="text-align:center;flex:1"><div style="font-size:22px;font-weight:900;color:#10B981">350 000</div><div style="font-size:11px;color:#8E8E93">Заработано</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:22px;font-weight:900;color:#2A4A7F">3</div><div style="font-size:11px;color:#8E8E93">Друзей</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:22px;font-weight:900;color:#F59E0B">1</div><div style="font-size:11px;color:#8E8E93">Сделка</div></div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.12s">
+          <div class="wc-title">Мои рефералы</div>
+
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#F43F5E,#FB923C)">АД</div>
+              <div class="friend-info"><div class="friend-name">Артём Давыдов</div><div class="friend-status">✅ Купил квартиру · ЖК Солнечный</div></div>
+              <div class="friend-earned">+330 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep done"></div><div class="fstep done"></div><div class="fstep done"></div></div>
+            <div style="margin-top:6px;font-size:11px;color:#8E8E93">Заявка +5К → Визит +10К → Показ +15К → Сделка +300К</div>
+          </div>
+
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)">ОК</div>
+              <div class="friend-info"><div class="friend-name">Ольга Кузнецова</div><div class="friend-status">🏢 Была в офисе, ждём показ</div></div>
+              <div class="friend-earned">+15 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep done"></div><div class="fstep cur"></div><div class="fstep"></div></div>
+            <div style="margin-top:6px;font-size:11px;color:#8E8E93">Заявка +5К → Визит +10К → <b style="color:#38BDF8">Ожидаем показ</b></div>
+          </div>
+
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#38BDF8,#818CF8)">ДП</div>
+              <div class="friend-info"><div class="friend-name">Дмитрий Петров</div><div class="friend-status">📝 Оставил заявку</div></div>
+              <div class="friend-earned">+5 000</div>
+            </div>
+            <div class="friend-steps"><div class="fstep done"></div><div class="fstep"></div><div class="fstep"></div><div class="fstep"></div></div>
+            <div style="margin-top:6px;font-size:11px;color:#8E8E93">Заявка +5К → <b style="color:#38BDF8">Ждём визит в офис</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ВИТРИНА ══ -->
+    <div class="screen" id="s-shop">
+      <div class="ci">
+        <div style="margin-bottom:12px">
+          <div style="font-size:20px;font-weight:900;color:#1A1A2E;margin-bottom:4px">Витрина партнёров</div>
+          <div style="font-size:13px;color:#8E8E93">Тратьте баллы на улучшение квартиры</div>
+        </div>
+
+        <div class="vit-grid fade">
+          <div class="vit-item" onclick="toast('Ремонт квартиры')">
+            <div class="vit-icon">🔧</div>
+            <div class="vit-name">Ремонт квартиры</div>
+            <div class="vit-limit">12 компаний</div>
+            <div class="vit-price">до 500 000 ₽</div>
+          </div>
+          <div class="vit-item" onclick="toast('Мебель и интерьер')">
+            <div class="vit-icon">🛋</div>
+            <div class="vit-name">Мебель</div>
+            <div class="vit-limit">8 компаний</div>
+            <div class="vit-price">до 200 000 ₽</div>
+          </div>
+          <div class="vit-item" onclick="toast('Бытовая техника')">
+            <div class="vit-icon">📱</div>
+            <div class="vit-name">Техника</div>
+            <div class="vit-limit">6 компаний</div>
+            <div class="vit-price">до 150 000 ₽</div>
+          </div>
+          <div class="vit-item" onclick="toast('Снижение ставки ипотеки')">
+            <div class="vit-icon">🏦</div>
+            <div class="vit-name">Ипотека −0.5%</div>
+            <div class="vit-limit">Партнёр-банк</div>
+            <div class="vit-price">Снижение ставки</div>
+          </div>
+          <div class="vit-item" onclick="toast('Переезд')">
+            <div class="vit-icon">🚚</div>
+            <div class="vit-name">Переезд</div>
+            <div class="vit-limit">4 компании</div>
+            <div class="vit-price">Бесплатно</div>
+          </div>
+          <div class="vit-item" onclick="toast('Страхование')">
+            <div class="vit-icon">🛡</div>
+            <div class="vit-name">Страховка −30%</div>
+            <div class="vit-limit">3 компании</div>
+            <div class="vit-price">Скидка 30%</div>
+          </div>
+          <div class="vit-item" onclick="toast('Кондиционирование')">
+            <div class="vit-icon">❄️</div>
+            <div class="vit-name">Кондиционеры</div>
+            <div class="vit-limit">5 компаний</div>
+            <div class="vit-price">до 80 000 ₽</div>
+          </div>
+          <div class="vit-item" onclick="toast('Клининг')">
+            <div class="vit-icon">🧹</div>
+            <div class="vit-name">Клининг</div>
+            <div class="vit-limit">3 компании</div>
+            <div class="vit-price">до 15 000 ₽</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ИСТОРИЯ ══ -->
+    <div class="screen" id="s-hist">
+      <div class="ci">
+        <div style="font-size:20px;font-weight:900;color:#1A1A2E;margin-bottom:12px">История баллов</div>
+        <div class="wc fade">
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#ECFDF5">🎉</div>
+            <div class="txn-info"><div class="txn-name">Сделка: Артём Давыдов</div><div class="txn-date">15 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+300 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#FEF3C7">👀</div>
+            <div class="txn-info"><div class="txn-name">Показ: Ольга Кузнецова</div><div class="txn-date">22 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+15 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#FCE7F3">🛋</div>
+            <div class="txn-info"><div class="txn-name">Покупка: мебель IKEA</div><div class="txn-date">20 фев 2025</div></div>
+            <div class="txn-amt txn-minus">−35 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#ECFDF5">👀</div>
+            <div class="txn-info"><div class="txn-name">Показ: Артём Давыдов</div><div class="txn-date">10 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+15 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#EFF6FF">🏢</div>
+            <div class="txn-info"><div class="txn-name">Визит: Ольга Кузнецова</div><div class="txn-date">8 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+10 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#EFF6FF">🏢</div>
+            <div class="txn-info"><div class="txn-name">Визит: Артём Давыдов</div><div class="txn-date">5 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+10 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#ECFDF5">📝</div>
+            <div class="txn-info"><div class="txn-name">Заявка: Дмитрий Петров</div><div class="txn-date">26 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+5 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#ECFDF5">📝</div>
+            <div class="txn-info"><div class="txn-name">Заявка: Ольга Кузнецова</div><div class="txn-date">1 фев 2025</div></div>
+            <div class="txn-amt txn-plus">+5 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#ECFDF5">📝</div>
+            <div class="txn-info"><div class="txn-name">Заявка: Артём Давыдов</div><div class="txn-date">28 янв 2025</div></div>
+            <div class="txn-amt txn-plus">+5 000</div>
+          </div>
+          <div class="txn-row">
+            <div class="txn-icon" style="background:#E0E7FF">🎁</div>
+            <div class="txn-info"><div class="txn-name">Стартовый бонус</div><div class="txn-date">15 янв 2025</div></div>
+            <div class="txn-amt txn-plus">+100 000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПРОФИЛЬ ══ -->
+    <div class="screen" id="s-profile">
+      <div class="ci">
+        <div class="prof-hero fade">
+          <div class="prof-ava">МИ</div>
+          <div class="prof-name">Мария Иванова</div>
+          <div class="prof-sub">ЖК «Солнечный» · дом 3, кв. 45</div>
+          <div class="prof-badge">🏠 Покупатель АПРИ</div>
+          <div class="prof-stats">
+            <div class="ps"><div class="ps-n">415К</div><div class="ps-l">баллов</div></div>
+            <div class="ps"><div class="ps-n">3</div><div class="ps-l">друга</div></div>
+            <div class="ps"><div class="ps-n">1</div><div class="ps-l">сделка</div></div>
+          </div>
+        </div>
+
+        <div class="prof-actions fade" style="animation-delay:.08s">
+          <div class="pact" onclick="toast('Моя квартира')">
+            <div class="pact-i" style="background:#E0E7FF">🏠</div>
+            <div class="pact-l">Моя квартира</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="toast('Мои покупки')">
+            <div class="pact-i" style="background:#ECFDF5">🛍</div>
+            <div class="pact-l">Мои покупки</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="toast('Реферальная ссылка')">
+            <div class="pact-i" style="background:#FEF3C7">🔗</div>
+            <div class="pact-l">Реферальная ссылка</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="goTab('support')">
+            <div class="pact-i" style="background:#FCE7F3">💬</div>
+            <div class="pact-l">Поддержка</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="toast('Настройки уведомлений')">
+            <div class="pact-i" style="background:#F0F4F8">🔔</div>
+            <div class="pact-l">Уведомления</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact danger" onclick="toast('Выход')">
+            <div class="pact-i" style="background:#FEE2E2">🚪</div>
+            <div class="pact-l">Выйти</div><div class="pact-a">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПОДДЕРЖКА ══ -->
+    <div class="screen" id="s-support">
+      <div class="ch-head">
+        <div class="ch-ava">🏠</div>
+        <div class="ch-info"><b>АПРИ · Поддержка</b><span>● Онлайн</span></div>
+      </div>
+      <div class="ch-msgs" id="chatMsgs">
+        <div class="cm ag"><div class="cm-t">Здравствуйте, Мария! Я консультант программы АПРИ.Бонус. Чем могу помочь?</div><div class="cm-d">12:30</div></div>
+        <div class="cm me"><div class="cm-t">Как потратить баллы на ремонт?</div><div class="cm-d">12:31</div></div>
+        <div class="cm ag"><div class="cm-t">Отличный вопрос! У нас 12 партнёров-подрядчиков. Выберите в разделе «Витрина» → «Ремонт» и оплатите баллами до 500 000 ₽.</div><div class="cm-d">12:31</div></div>
+      </div>
+      <div class="ch-qr">
+        <div class="qr" onclick="sendQR('Как пригласить друга?')">Пригласить друга</div>
+        <div class="qr" onclick="sendQR('Статус начислений')">Начисления</div>
+        <div class="qr" onclick="sendQR('Условия программы')">Условия</div>
+      </div>
+      <div class="ch-inp">
+        <input type="text" id="chatInput" placeholder="Напишите сообщение..." />
+        <button class="ch-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn on" id="bn-home" onclick="goTab('home')"><div class="i">🏠</div><div class="l">Главная</div></div>
+    <div class="bn" id="bn-ref" onclick="goTab('ref')"><div class="i">👥</div><div class="l">Друзья</div></div>
+    <div class="bn" id="bn-shop" onclick="goTab('shop')"><div class="i">🛍</div><div class="l">Витрина</div></div>
+    <div class="bn" id="bn-hist" onclick="goTab('hist')"><div class="i">📋</div><div class="l">История</div></div>
+    <div class="bn" id="bn-profile" onclick="goTab('profile')"><div class="i">👤</div><div class="l">Профиль</div></div>
+  </div>
+  <div class="home-ind"><div class="home-bar"></div></div>
+
+  <div class="toast" id="toastEl"></div>
+</div>
+
+<script>
+  function goTab(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+    const el = document.getElementById('s-' + name);
+    if (el) el.classList.add('active');
+    const bn = document.getElementById('bn-' + name);
+    if (bn) bn.classList.add('on');
+    if (name === 'support') {
+      document.getElementById('s-support').classList.add('active');
+      document.getElementById('bn-profile').classList.add('on');
+      setTimeout(() => { document.getElementById('chatMsgs').scrollTop = 99999; }, 100);
+    }
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toastEl');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function sendChat() {
+    const inp = document.getElementById('chatInput');
+    const msg = inp.value.trim();
+    if (!msg) return;
+    const area = document.getElementById('chatMsgs');
+    const now = new Date();
+    const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    area.innerHTML += `<div class="cm me"><div class="cm-t">${msg}</div><div class="cm-d">${time}</div></div>`;
+    inp.value = '';
+    area.scrollTop = 99999;
+    setTimeout(() => {
+      area.innerHTML += `<div class="cm ag"><div class="cm-t">Спасибо за вопрос! Уточню информацию и вернусь с ответом.</div><div class="cm-d">${time}</div></div>`;
+      area.scrollTop = 99999;
+    }, 1200);
+  }
+
+  function sendQR(text) {
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChat();
+  });
+</script>
+</body>
+</html>

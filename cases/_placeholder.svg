@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="500" fill="#1a1a1a"/>
+  <rect width="800" height="500" fill="url(#grid)"/>
+  <g transform="translate(400 250)" font-family="PT Mono, ui-monospace, monospace" text-anchor="middle">
+    <circle r="36" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text y="10" font-size="32" fill="rgba(255,255,255,0.55)" font-weight="700">?</text>
+    <text y="78" font-size="13" fill="rgba(255,255,255,0.4)" letter-spacing="3">ИЗОБРАЖЕНИЕ НЕ ЗАГРУЖЕНО</text>
+  </g>
+</svg>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Snake</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: monospace;
+    color: #fff;
+  }
+  h1 { font-size: 28px; margin-bottom: 12px; letter-spacing: 4px; color: #4ade80; }
+  #score { font-size: 18px; margin-bottom: 16px; color: #a3e635; }
+  canvas {
+    border: 2px solid #4ade80;
+    border-radius: 4px;
+    box-shadow: 0 0 30px #4ade8044;
+  }
+  #msg {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+</style>
+</head>
+<body>
+<h1>SNAKE</h1>
+<div id="score">Score: 0</div>
+<canvas id="c" width="400" height="400"></canvas>
+<div id="msg">Нажми Space или Enter чтобы начать · WASD или стрелки</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const msgEl = document.getElementById('msg');
+
+const CELL = 20;
+const COLS = canvas.width / CELL;
+const ROWS = canvas.height / CELL;
+
+const FRUITS = ['🍎','🍊','🍋','🍇','🍓','🫐','🍒'];
+
+let snake, dir, nextDir, fruit, score, running, loop;
+
+function init() {
+  snake = [
+    { x: 10, y: 10 },
+    { x: 9, y: 10 },
+    { x: 8, y: 10 },
+  ];
+  dir = { x: 1, y: 0 };
+  nextDir = { x: 1, y: 0 };
+  score = 0;
+  scoreEl.textContent = 'Score: 0';
+  placeFruit();
+  running = true;
+  msgEl.textContent = 'WASD или стрелки для управления';
+  clearInterval(loop);
+  loop = setInterval(tick, 120);
+}
+
+function placeFruit() {
+  let pos;
+  do {
+    pos = {
+      x: Math.floor(Math.random() * COLS),
+      y: Math.floor(Math.random() * ROWS),
+      emoji: FRUITS[Math.floor(Math.random() * FRUITS.length)]
+    };
+  } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+  fruit = pos;
+}
+
+function tick() {
+  dir = nextDir;
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  // стены
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+    return gameOver();
+  }
+  // себя
+  if (snake.some(s => s.x === head.x && s.y === head.y)) {
+    return gameOver();
+  }
+
+  snake.unshift(head);
+
+  if (head.x === fruit.x && head.y === fruit.y) {
+    score += 10;
+    scoreEl.textContent = 'Score: ' + score;
+    placeFruit();
+  } else {
+    snake.pop();
+  }
+
+  draw();
+}
+
+function gameOver() {
+  clearInterval(loop);
+  running = false;
+  draw();
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#f87171';
+  ctx.font = 'bold 36px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 10);
+  ctx.fillStyle = '#fff';
+  ctx.font = '18px monospace';
+  ctx.fillText('Score: ' + score, canvas.width / 2, canvas.height / 2 + 24);
+  msgEl.textContent = 'Нажми Space или Enter чтобы играть снова';
+}
+
+function draw() {
+  // фон
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // сетка (тихая)
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= COLS; x++) {
+    ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= ROWS; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
+  }
+
+  // фрукт
+  ctx.font = (CELL - 2) + 'px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fruit.emoji, fruit.x * CELL + CELL / 2, fruit.y * CELL + CELL / 2);
+
+  // змейка
+  snake.forEach((seg, i) => {
+    const isHead = i === 0;
+    const t = i / snake.length;
+    // градиент от головы к хвосту
+    const g = Math.round(180 - t * 80);
+    ctx.fillStyle = isHead ? '#4ade80' : `rgb(30,${g},60)`;
+    const pad = isHead ? 1 : 2;
+    ctx.beginPath();
+    ctx.roundRect(
+      seg.x * CELL + pad, seg.y * CELL + pad,
+      CELL - pad * 2, CELL - pad * 2,
+      isHead ? 6 : 3
+    );
+    ctx.fill();
+
+    // глаза на голове
+    if (isHead) {
+      ctx.fillStyle = '#0f172a';
+      const ex = dir.x !== 0 ? (dir.x > 0 ? 0.65 : 0.35) : 0.35;
+      const ey = dir.y !== 0 ? (dir.y > 0 ? 0.65 : 0.35) : 0.35;
+      ctx.beginPath();
+      ctx.arc(seg.x * CELL + CELL * ex, seg.y * CELL + CELL * ey, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      const ex2 = dir.x !== 0 ? ex : 0.65;
+      const ey2 = dir.y !== 0 ? ey : 0.65;
+      ctx.beginPath();
+      ctx.arc(seg.x * CELL + CELL * ex2, seg.y * CELL + CELL * ey2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+document.addEventListener('keydown', e => {
+  const key = e.key;
+
+  if ((key === ' ' || key === 'Enter') && !running) {
+    init();
+    return;
+  }
+
+  if (!running) return;
+
+  if ((key === 'ArrowUp' || key === 'w' || key === 'W') && dir.y === 0)
+    nextDir = { x: 0, y: -1 };
+  if ((key === 'ArrowDown' || key === 's' || key === 'S') && dir.y === 0)
+    nextDir = { x: 0, y: 1 };
+  if ((key === 'ArrowLeft' || key === 'a' || key === 'A') && dir.x === 0)
+    nextDir = { x: -1, y: 0 };
+  if ((key === 'ArrowRight' || key === 'd' || key === 'D') && dir.x === 0)
+    nextDir = { x: 1, y: 0 };
+
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) e.preventDefault();
+});
+
+// первый экран
+ctx.fillStyle = '#0f172a';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#4ade80';
+ctx.font = 'bold 32px monospace';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('🐍 SNAKE', canvas.width / 2, canvas.height / 2 - 16);
+ctx.fillStyle = '#6b7280';
+ctx.font = '16px monospace';
+ctx.fillText('Нажми Space чтобы начать', canvas.width / 2, canvas.height / 2 + 24);
+</script>
+</body>
+</html>

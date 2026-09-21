@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BK — Операция доброта</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #C8C8CC; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12); display: flex; flex-direction: column; background: #2A1008; position: relative; }
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(135deg, #4A1A0A 0%, #6B2D14 100%); padding: 28px 20px 18px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; }
+  .hdr-left { display: flex; align-items: center; gap: 10px; }
+  .hdr-icon { font-size: 28px; }
+  .hdr-title { font-size: 18px; font-weight: 900; color: #FFC72C; }
+  .hdr-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+  .hdr-badge { background: #FF6B00; color: white; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; position: relative; }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* CARDS */
+  .card { background: rgba(255,255,255,0.07); border-radius: 18px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.06); }
+  .sec-label { font-size: 18px; font-weight: 900; color: white; margin-bottom: 12px; }
+  .sec-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+
+  /* ========= SCREEN 1: МИССИЯ ========= */
+  .mission-hero { background: linear-gradient(135deg, rgba(255,107,0,0.2), rgba(255,199,44,0.1)); border: 1px solid rgba(255,107,0,0.15); border-radius: 20px; padding: 24px 20px; text-align: center; margin-bottom: 16px; }
+  .mission-emoji { font-size: 56px; margin-bottom: 12px; display: block; }
+  .mission-title { font-size: 22px; font-weight: 900; color: #FFC72C; margin-bottom: 6px; }
+  .mission-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+  .mission-badge { display: inline-block; background: rgba(255,107,0,0.2); color: #FF6B00; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
+
+  .game-card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 18px; margin-bottom: 12px; cursor: pointer; transition: transform 0.12s; position: relative; overflow: hidden; }
+  .game-card:active { transform: scale(0.97); }
+  .game-card-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+  .game-icon { font-size: 40px; flex-shrink: 0; }
+  .game-info { flex: 1; }
+  .game-name { font-size: 16px; font-weight: 900; color: white; margin-bottom: 4px; }
+  .game-desc { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.4; }
+  .game-meta { display: flex; align-items: center; gap: 12px; }
+  .game-diff { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); }
+  .game-diff-dots { display: flex; gap: 3px; margin-left: 4px; }
+  .game-diff-dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+  .game-diff-dots span.on { background: #FF6B00; }
+  .game-score { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .game-score b { color: #FFC72C; }
+  .game-play-btn { display: block; width: 100%; padding: 14px; border-radius: 14px; border: none; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; font-size: 16px; font-weight: 900; cursor: pointer; margin-top: 12px; transition: transform 0.1s; }
+  .game-play-btn:active { transform: scale(0.97); }
+
+  .mission-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 4px; }
+  .ms-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  .ms-num { font-size: 18px; font-weight: 900; color: #FF6B00; }
+  .ms-lbl { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  /* ========= SCREEN 2: RUNNER GAME ========= */
+  #s-runner { padding: 0; position: relative; }
+  #s-runner.active { display: flex; flex-direction: column; height: 100%; }
+
+  .game-hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0,0,0,0.4); flex-shrink: 0; z-index: 10; }
+  .hud-score { font-size: 18px; font-weight: 900; color: #FFC72C; }
+  .hud-dist { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .hud-timer { font-size: 14px; font-weight: 800; color: white; background: rgba(255,107,0,0.3); padding: 4px 12px; border-radius: 20px; }
+
+  .game-area { flex: 1; position: relative; overflow: hidden; background: linear-gradient(180deg, #1a0a04 0%, #3d1a0a 30%, #5a2d14 60%, #4A1A0A 100%); touch-action: none; user-select: none; -webkit-user-select: none; }
+
+  /* Lanes */
+  .lane { position: absolute; left: 0; right: 0; display: flex; align-items: center; }
+  .lane-0 { top: 10%; height: 26.66%; }
+  .lane-1 { top: 36.66%; height: 26.66%; }
+  .lane-2 { top: 63.33%; height: 26.66%; }
+  .lane-line { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.06); }
+  .lane-line-1 { top: 33.33%; }
+  .lane-line-2 { top: 66.66%; }
+
+  /* Ground decoration */
+  .ground { position: absolute; bottom: 0; left: 0; right: 0; height: 10%; background: linear-gradient(180deg, #3d1a0a, #2A1008); }
+  .sky { position: absolute; top: 0; left: 0; right: 0; height: 10%; background: linear-gradient(180deg, #0a0505, #1a0a04); }
+
+  /* Player */
+  .player { position: absolute; left: 50px; font-size: 36px; z-index: 5; transition: top 0.15s ease-out; filter: drop-shadow(0 2px 8px rgba(255,107,0,0.5)); }
+
+  /* Obstacles & collectibles */
+  .entity { position: absolute; font-size: 28px; z-index: 3; }
+  .entity.obstacle { filter: drop-shadow(0 2px 6px rgba(255,0,0,0.3)); }
+  .entity.collectible { filter: drop-shadow(0 2px 6px rgba(255,199,44,0.5)); animation: bob 1s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+  /* Scrolling bg elements */
+  .bg-element { position: absolute; font-size: 16px; opacity: 0.15; z-index: 1; }
+
+  /* Game over overlay */
+  .game-over { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+  .game-over.show { opacity: 1; pointer-events: auto; }
+  .go-emoji { font-size: 64px; margin-bottom: 16px; }
+  .go-title { font-size: 24px; font-weight: 900; color: #FFC72C; margin-bottom: 6px; }
+  .go-sub { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+  .go-score { font-size: 40px; font-weight: 900; color: #FF6B00; margin-bottom: 4px; }
+  .go-score-label { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+  .go-btn { padding: 16px 48px; border-radius: 14px; border: none; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; font-size: 16px; font-weight: 900; cursor: pointer; margin-bottom: 10px; }
+  .go-btn-sec { padding: 12px 36px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  /* Start overlay */
+  .game-start { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; }
+  .gs-title { font-size: 20px; font-weight: 900; color: #FFC72C; margin-bottom: 8px; }
+  .gs-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 6px; text-align: center; padding: 0 30px; line-height: 1.4; }
+  .gs-hint { font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 20px; }
+  .gs-btn { padding: 18px 64px; border-radius: 16px; border: none; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; font-size: 18px; font-weight: 900; cursor: pointer; }
+
+  /* ========= SCREEN 3: ЛИДЕРБОРД ========= */
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.05); border-radius: 14px; margin-bottom: 6px; }
+  .lb-row.you { background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.2); }
+  .lb-pos { font-size: 16px; font-weight: 900; color: rgba(255,255,255,0.3); width: 28px; text-align: center; flex-shrink: 0; }
+  .lb-row:nth-child(1) .lb-pos { color: #FFC72C; }
+  .lb-row:nth-child(2) .lb-pos { color: #C0C0C0; }
+  .lb-row:nth-child(3) .lb-pos { color: #CD7F32; }
+  .lb-ava { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 700; color: white; }
+  .lb-game { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .lb-score { font-size: 16px; font-weight: 900; color: #FF6B00; flex-shrink: 0; }
+
+  .lb-replay { display: block; width: 100%; padding: 14px; border-radius: 14px; border: none; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; font-size: 16px; font-weight: 900; cursor: pointer; margin-top: 12px; text-align: center; }
+
+  /* ========= SCREEN 4: НАГРАДЫ ========= */
+  .reward-hero { background: linear-gradient(135deg, rgba(76,175,80,0.15), rgba(255,199,44,0.1)); border: 1px solid rgba(76,175,80,0.15); border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 16px; }
+  .rh-emoji { font-size: 48px; margin-bottom: 8px; display: block; }
+  .rh-title { font-size: 18px; font-weight: 900; color: #FFC72C; margin-bottom: 4px; }
+  .rh-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+  .reward-btn { display: block; width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; margin-bottom: 10px; transition: transform 0.1s; }
+  .reward-btn:active { transform: scale(0.97); }
+  .rb-primary { background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; }
+  .rb-green { background: linear-gradient(135deg, #4CAF50, #66BB6A); color: white; }
+  .rb-outline { background: transparent; border: 2px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+
+  .share-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .share-btn { flex: 1; padding: 12px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
+  .sh-tg { background: #0088CC; color: white; }
+  .sh-vk { background: #4680C2; color: white; }
+  .sh-wa { background: #25D366; color: white; }
+  .sh-link { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+
+  .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { font-size: 13px; color: rgba(255,255,255,0.5); }
+  .stat-val { font-size: 13px; font-weight: 800; color: #FFC72C; }
+
+  /* ========= SCREEN 5: ПРОФИЛЬ ========= */
+  .prof-card { background: rgba(255,255,255,0.07); border-radius: 20px; padding: 24px 20px; text-align: center; margin-bottom: 12px; }
+  .prof-ava { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #FF6B00, #FFC72C); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; box-shadow: 0 4px 20px rgba(255,107,0,0.3); }
+  .prof-name { font-size: 20px; font-weight: 900; color: white; }
+  .prof-rank { font-size: 13px; color: #FFC72C; font-weight: 700; margin-top: 4px; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .ps { text-align: center; border-right: 1px solid rgba(255,255,255,0.08); }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 22px; font-weight: 900; color: #FF6B00; }
+  .ps-l { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .prof-menu { background: rgba(255,255,255,0.07); border-radius: 18px; overflow: hidden; }
+  .pm-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+  .pm-item:last-child { border-bottom: none; }
+  .pm-item:active { background: rgba(255,255,255,0.05); }
+  .pm-icon { font-size: 20px; }
+  .pm-text { flex: 1; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .pm-arrow { font-size: 14px; color: rgba(255,255,255,0.2); }
+
+  /* BOTTOM NAV */
+  .bnav { background: rgba(42,16,8,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: space-around; padding: 8px 0 20px; flex-shrink: 0; border-top: 0.5px solid rgba(255,255,255,0.08); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 6px; transition: all 0.15s; }
+  .bn .i { font-size: 20px; opacity: 0.35; transition: all 0.15s; }
+  .bn .l { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.35); transition: all 0.15s; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #FF6B00; font-weight: 700; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 100px; left: 16px; right: 16px; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 800; text-align: center; z-index: 100; opacity: 0; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #2A1008; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+    .toast { bottom: 100px; }
+  }
+  @media (max-width: 375px) {
+    .mission-title { font-size: 19px; }
+    .game-name { font-size: 14px; }
+    .screen { padding: 12px; }
+    .bn .l { font-size: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- HEADER -->
+  <div class="app-hdr" id="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-left">
+        <span class="hdr-icon">🦸</span>
+        <div>
+          <div class="hdr-title">Операция доброта</div>
+          <div class="hdr-sub">Агент BK на задании</div>
+        </div>
+      </div>
+      <div class="hdr-badge">🐕 Спаси!</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content-area">
+
+    <!-- SCREEN 1: МИССИЯ -->
+    <div class="screen active" id="s-mission">
+      <div class="mission-hero">
+        <span class="mission-emoji">🕵️</span>
+        <div class="mission-title">Агент BK на задании</div>
+        <div class="mission-desc">Конкурент попал в скандал — пострадал пёсик. Бургер Кинг отправляет спецагента на операцию по спасению. Выбери миссию!</div>
+        <div class="mission-badge">СЕКРЕТНАЯ ОПЕРАЦИЯ</div>
+      </div>
+
+      <div class="game-card" onclick="startRunner()">
+        <div class="game-card-top">
+          <span class="game-icon">🏃</span>
+          <div class="game-info">
+            <div class="game-name">Забег с пледом</div>
+            <div class="game-desc">Пробеги через пиццерию, собери бонусы, спаси собаку! Уворачивайся от коробок и дверей.</div>
+          </div>
+        </div>
+        <div class="game-meta">
+          <span class="game-diff">Сложность:</span>
+          <span class="game-diff-dots"><span class="on"></span><span class="on"></span><span></span></span>
+          <span class="game-score" style="margin-left:auto;">Рекорд: <b id="best-score-1">0</b></span>
+        </div>
+        <button class="game-play-btn">🎮 ИГРАТЬ</button>
+      </div>
+
+      <div class="game-card" style="opacity:0.5; pointer-events:none;">
+        <div class="game-card-top">
+          <span class="game-icon">🎭</span>
+          <div class="game-info">
+            <div class="game-name">Как достать управляющую</div>
+            <div class="game-desc">Устрой пранки управляющей: закажи доставку BK в пиццерию, включи джингл на полную!</div>
+          </div>
+        </div>
+        <div class="game-meta">
+          <span class="game-diff">Сложность:</span>
+          <span class="game-diff-dots"><span class="on"></span><span class="on"></span><span class="on"></span></span>
+          <span class="game-score" style="margin-left:auto;">Рекорд: <b>—</b></span>
+        </div>
+        <button class="game-play-btn" style="opacity:0.5;">🔒 СКОРО</button>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;color:white;margin-bottom:12px;">Общая статистика</div>
+        <div class="mission-stats">
+          <div class="ms-item">
+            <div class="ms-num" id="total-games">0</div>
+            <div class="ms-lbl">Игр</div>
+          </div>
+          <div class="ms-item">
+            <div class="ms-num" id="total-score">0</div>
+            <div class="ms-lbl">Очков</div>
+          </div>
+          <div class="ms-item">
+            <div class="ms-num" id="dogs-saved">0</div>
+            <div class="ms-lbl">Собак 🐕</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: RUNNER GAME -->
+    <div class="screen" id="s-runner">
+      <!-- HUD -->
+      <div class="game-hud">
+        <div>
+          <div class="hud-score" id="hud-score">0</div>
+          <div class="hud-dist" id="hud-dist">0м</div>
+        </div>
+        <div class="hud-timer" id="hud-timer">30с</div>
+      </div>
+
+      <!-- GAME AREA -->
+      <div class="game-area" id="game-area">
+        <div class="sky"></div>
+        <div class="lane-line lane-line-1"></div>
+        <div class="lane-line lane-line-2"></div>
+        <div class="ground"></div>
+
+        <!-- Player -->
+        <div class="player" id="player">🏃</div>
+
+        <!-- Start Overlay -->
+        <div class="game-start" id="game-start">
+          <span style="font-size:56px;margin-bottom:12px;">🏃</span>
+          <div class="gs-title">Забег с пледом</div>
+          <div class="gs-sub">Тапни верх или низ экрана чтобы переключать дорожки. Собирай еду, уклоняйся от коробок!</div>
+          <div class="gs-hint">🍔 +50  🧅 щит  🍟 +30  📦🚪 стоп</div>
+          <button class="gs-btn" onclick="beginGame()">СТАРТ</button>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div class="game-over" id="game-over">
+          <span class="go-emoji">🐕</span>
+          <div class="go-title">Собака спасена!</div>
+          <div class="go-sub">Отличная работа, агент!</div>
+          <div class="go-score" id="go-score">0</div>
+          <div class="go-score-label">очков</div>
+          <button class="go-btn" onclick="restartGame()">ЗАНОВО</button>
+          <button class="go-btn-sec" onclick="exitGame()">К МИССИЯМ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: ЛИДЕРБОРД -->
+    <div class="screen" id="s-leaderboard">
+      <div class="sec-label">Лидерборд</div>
+      <div class="sec-sub">Лучшие агенты операции</div>
+
+      <div class="lb-row">
+        <div class="lb-pos">1</div>
+        <div class="lb-ava">🥇</div>
+        <div class="lb-info">
+          <div class="lb-name">BurgerHero_42</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">2 450</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">2</div>
+        <div class="lb-ava">🥈</div>
+        <div class="lb-info">
+          <div class="lb-name">WopperKing</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">2 180</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">3</div>
+        <div class="lb-ava">🥉</div>
+        <div class="lb-info">
+          <div class="lb-name">FlameGrilled</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">1 920</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">4</div>
+        <div class="lb-ava">😎</div>
+        <div class="lb-info">
+          <div class="lb-name">OnionRingLord</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">1 740</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">5</div>
+        <div class="lb-ava">🔥</div>
+        <div class="lb-info">
+          <div class="lb-name">FriesQueen</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">1 550</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">6</div>
+        <div class="lb-ava">🍔</div>
+        <div class="lb-info">
+          <div class="lb-name">KetchupMaster</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">1 380</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">7</div>
+        <div class="lb-ava">👑</div>
+        <div class="lb-info">
+          <div class="lb-name">CrownAgent</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">1 210</div>
+      </div>
+      <div class="lb-row you">
+        <div class="lb-pos">8</div>
+        <div class="lb-ava">🕵️</div>
+        <div class="lb-info">
+          <div class="lb-name">Вы</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score" id="lb-your-score">0</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">9</div>
+        <div class="lb-ava">🤠</div>
+        <div class="lb-info">
+          <div class="lb-name">PattySmith</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">890</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">10</div>
+        <div class="lb-ava">🐶</div>
+        <div class="lb-info">
+          <div class="lb-name">DogSaver99</div>
+          <div class="lb-game">Забег с пледом</div>
+        </div>
+        <div class="lb-score">720</div>
+      </div>
+
+      <button class="lb-replay" onclick="startRunner()">🎮 Переиграть</button>
+    </div>
+
+    <!-- SCREEN 4: НАГРАДЫ -->
+    <div class="screen" id="s-rewards">
+      <div class="reward-hero">
+        <span class="rh-emoji">🐕</span>
+        <div class="rh-title">Вы помогли спасти собаку!</div>
+        <div class="rh-sub">Каждая игра приближает нас к цели</div>
+      </div>
+
+      <div class="sec-label">Поделиться</div>
+      <div class="share-row">
+        <button class="share-btn sh-tg" onclick="showToast('Отправлено в Telegram!')">TG</button>
+        <button class="share-btn sh-vk" onclick="showToast('Отправлено в ВК!')">VK</button>
+        <button class="share-btn sh-wa" onclick="showToast('Отправлено в WhatsApp!')">WA</button>
+        <button class="share-btn sh-link" onclick="showToast('Ссылка скопирована!')">🔗</button>
+      </div>
+
+      <button class="reward-btn rb-green" onclick="showToast('Спасибо! Вы помогли приюту «Лучший друг»')">🐶 Помочь приюту — 10₽ от BK</button>
+      <button class="reward-btn rb-primary" onclick="showToast('Купон добавлен!')">🎟️ Получить купон — Кофе за 1₽</button>
+      <button class="reward-btn rb-outline" onclick="startRunner()">🎮 Играть снова</button>
+
+      <div class="card" style="margin-top:16px;">
+        <div style="font-size:14px;font-weight:800;color:white;margin-bottom:12px;">Ваша статистика</div>
+        <div class="stat-row">
+          <span class="stat-label">Лучший результат</span>
+          <span class="stat-val" id="rw-best">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Всего игр</span>
+          <span class="stat-val" id="rw-games">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Собак спасено</span>
+          <span class="stat-val" id="rw-dogs">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Среднее место в ТОП-10</span>
+          <span class="stat-val">8 из 10</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Лучше, чем</span>
+          <span class="stat-val">64% игроков</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: ПРОФИЛЬ -->
+    <div class="screen" id="s-profile">
+      <div class="prof-card">
+        <div class="prof-ava">🕵️</div>
+        <div class="prof-name">Агент BK-7742</div>
+        <div class="prof-rank">Полевой агент</div>
+        <div class="prof-stats">
+          <div class="ps">
+            <div class="ps-n" id="pr-games">0</div>
+            <div class="ps-l">Миссий</div>
+          </div>
+          <div class="ps">
+            <div class="ps-n" id="pr-score">0</div>
+            <div class="ps-l">Очков</div>
+          </div>
+          <div class="ps">
+            <div class="ps-n" id="pr-dogs">0</div>
+            <div class="ps-l">Собак</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;color:white;margin-bottom:10px;">Уровень агента</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:24px;">🕵️</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:white;">Полевой агент</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);">До «Спецагент» — ещё 5 миссий</div>
+          </div>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:30%;background:linear-gradient(90deg,#FF6B00,#FFC72C);border-radius:3px;"></div>
+        </div>
+      </div>
+
+      <div class="prof-menu">
+        <div class="pm-item">
+          <span class="pm-icon">🏆</span>
+          <span class="pm-text">Достижения</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">🎟️</span>
+          <span class="pm-text">Мои купоны</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">📊</span>
+          <span class="pm-text">История игр</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">🔔</span>
+          <span class="pm-text">Уведомления</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">⚙️</span>
+          <span class="pm-text">Настройки</span>
+          <span class="pm-arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav" id="bnav">
+    <div class="bn on" onclick="go('s-mission',this)">
+      <span class="i">🎯</span>
+      <span class="l">Миссия</span>
+    </div>
+    <div class="bn" onclick="startRunner(this)">
+      <span class="i">🎮</span>
+      <span class="l">Игра</span>
+    </div>
+    <div class="bn" onclick="go('s-leaderboard',this)">
+      <span class="i">🏆</span>
+      <span class="l">Лидерборд</span>
+    </div>
+    <div class="bn" onclick="go('s-rewards',this)">
+      <span class="i">🎁</span>
+      <span class="l">Награды</span>
+    </div>
+    <div class="bn" onclick="go('s-profile',this)">
+      <span class="i">👤</span>
+      <span class="l">Профиль</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== NAVIGATION =====
+  function go(id, el) {
+    // Hide header and show bnav for non-game screens
+    document.getElementById('app-hdr').style.display = '';
+    document.getElementById('bnav').style.display = '';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (el) {
+      document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+      el.classList.add('on');
+    }
+    // Stop game if leaving runner
+    if (id !== 's-runner' && gameRunning) {
+      stopGame();
+    }
+  }
+
+  // ===== TOAST =====
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ===== GAME STATE =====
+  let gameRunning = false;
+  let gameLoop = null;
+  let spawnLoop = null;
+  let timerLoop = null;
+  let score = 0;
+  let distance = 0;
+  let timeLeft = 30;
+  let currentLane = 1; // 0, 1, 2
+  let entities = [];
+  let bestScore = 0;
+  let totalGames = 0;
+  let totalScore = 0;
+  let dogsSaved = 0;
+  let hasShield = false;
+  let shieldTimeout = null;
+  let gameSpeed = 3;
+
+  const lanePositions = [0.10, 0.3666, 0.6333]; // top of each lane as fraction
+  const laneHeight = 0.2666;
+  const collectibles = [
+    { emoji: '🍔', points: 50, type: 'speed' },
+    { emoji: '🧅', points: 20, type: 'shield' },
+    { emoji: '🍟', points: 30, type: 'points' }
+  ];
+  const obstacles = [
+    { emoji: '📦', type: 'obstacle' },
+    { emoji: '🚪', type: 'obstacle' }
+  ];
+
+  function startRunner(navEl) {
+    // Show runner screen
+    document.getElementById('app-hdr').style.display = 'none';
+    document.getElementById('bnav').style.display = 'none';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('s-runner').classList.add('active');
+    if (navEl) {
+      document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+      navEl.classList.add('on');
+    }
+
+    // Show start overlay
+    document.getElementById('game-start').style.display = 'flex';
+    document.getElementById('game-over').classList.remove('show');
+
+    // Reset player position
+    currentLane = 1;
+    positionPlayer();
+  }
+
+  function beginGame() {
+    document.getElementById('game-start').style.display = 'none';
+    document.getElementById('game-over').classList.remove('show');
+
+    // Reset state
+    score = 0;
+    distance = 0;
+    timeLeft = 30;
+    currentLane = 1;
+    gameSpeed = 3;
+    hasShield = false;
+    entities = [];
+    gameRunning = true;
+
+    // Clear old entities
+    document.querySelectorAll('.entity').forEach(e => e.remove());
+    document.querySelectorAll('.bg-element').forEach(e => e.remove());
+
+    // Position player
+    positionPlayer();
+    updateHUD();
+
+    // Touch controls
+    const area = document.getElementById('game-area');
+    area.ontouchstart = handleTouch;
+    area.onmousedown = handleClick;
+
+    // Start loops
+    gameLoop = setInterval(updateGame, 16);
+    spawnLoop = setInterval(spawnEntity, 800);
+    timerLoop = setInterval(() => {
+      timeLeft--;
+      document.getElementById('hud-timer').textContent = timeLeft + 'с';
+      if (timeLeft <= 5) {
+        document.getElementById('hud-timer').style.background = 'rgba(255,0,0,0.4)';
+      }
+      if (timeLeft <= 0) {
+        endGame(true);
+      }
+    }, 1000);
+
+    // Spawn bg elements
+    setInterval(() => {
+      if (!gameRunning) return;
+      spawnBgElement();
+    }, 2000);
+  }
+
+  function positionPlayer() {
+    const player = document.getElementById('player');
+    const area = document.getElementById('game-area');
+    const areaH = area.offsetHeight;
+    const topFraction = lanePositions[currentLane] + laneHeight / 2 - 0.04;
+    player.style.top = (topFraction * 100) + '%';
+  }
+
+  function handleTouch(e) {
+    e.preventDefault();
+    const area = document.getElementById('game-area');
+    const rect = area.getBoundingClientRect();
+    const y = e.touches[0].clientY - rect.top;
+    const relY = y / rect.height;
+    if (relY < 0.4 && currentLane > 0) {
+      currentLane--;
+    } else if (relY > 0.6 && currentLane < 2) {
+      currentLane++;
+    }
+    positionPlayer();
+  }
+
+  function handleClick(e) {
+    const area = document.getElementById('game-area');
+    const rect = area.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const relY = y / rect.height;
+    if (relY < 0.4 && currentLane > 0) {
+      currentLane--;
+    } else if (relY > 0.6 && currentLane < 2) {
+      currentLane++;
+    }
+    positionPlayer();
+  }
+
+  function spawnEntity() {
+    if (!gameRunning) return;
+    const area = document.getElementById('game-area');
+    const lane = Math.floor(Math.random() * 3);
+    const isObstacle = Math.random() < 0.4;
+
+    let item;
+    if (isObstacle) {
+      item = obstacles[Math.floor(Math.random() * obstacles.length)];
+    } else {
+      item = collectibles[Math.floor(Math.random() * collectibles.length)];
+    }
+
+    const el = document.createElement('div');
+    el.className = 'entity ' + (isObstacle ? 'obstacle' : 'collectible');
+    el.textContent = item.emoji;
+    el.style.right = '-40px';
+    const topFraction = lanePositions[lane] + laneHeight / 2 - 0.03;
+    el.style.top = (topFraction * 100) + '%';
+
+    const entityData = {
+      el: el,
+      lane: lane,
+      x: area.offsetWidth + 40,
+      type: isObstacle ? 'obstacle' : item.type,
+      points: item.points || 0,
+      collected: false
+    };
+
+    entities.push(entityData);
+    area.appendChild(el);
+  }
+
+  function spawnBgElement() {
+    const area = document.getElementById('game-area');
+    const bgItems = ['🌙', '⭐', '🏢', '🏪', '🏠'];
+    const el = document.createElement('div');
+    el.className = 'bg-element';
+    el.textContent = bgItems[Math.floor(Math.random() * bgItems.length)];
+    el.style.right = '-30px';
+    el.style.top = (Math.random() * 80 + 5) + '%';
+    el.style.fontSize = (12 + Math.random() * 14) + 'px';
+    area.appendChild(el);
+
+    // Animate
+    let bx = area.offsetWidth + 30;
+    const bInterval = setInterval(() => {
+      if (!gameRunning) { clearInterval(bInterval); el.remove(); return; }
+      bx -= gameSpeed * 0.5;
+      el.style.right = (area.offsetWidth - bx) + 'px';
+      if (bx < -40) { clearInterval(bInterval); el.remove(); }
+    }, 16);
+  }
+
+  function updateGame() {
+    if (!gameRunning) return;
+    const area = document.getElementById('game-area');
+    const areaW = area.offsetWidth;
+
+    distance += gameSpeed * 0.5;
+    score += 1;
+    gameSpeed = 3 + (30 - timeLeft) * 0.05; // speed up over time
+
+    // Move entities
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const ent = entities[i];
+      ent.x -= gameSpeed;
+      ent.el.style.left = ent.x + 'px';
+      ent.el.style.right = 'auto';
+
+      // Check collision (player is at x=50, width ~36)
+      if (!ent.collected && ent.x < 86 && ent.x > 14 && ent.lane === currentLane) {
+        if (ent.type === 'obstacle') {
+          if (hasShield) {
+            hasShield = false;
+            ent.collected = true;
+            ent.el.style.opacity = '0.3';
+            ent.el.style.transform = 'scale(0.5)';
+            const player = document.getElementById('player');
+            player.style.filter = 'drop-shadow(0 2px 8px rgba(255,107,0,0.5))';
+            showToast('🧅 Щит поглотил удар!');
+          } else {
+            endGame(false);
+            return;
+          }
+        } else {
+          ent.collected = true;
+          ent.el.style.transition = 'all 0.2s';
+          ent.el.style.transform = 'scale(1.5)';
+          ent.el.style.opacity = '0';
+          score += ent.points;
+          if (ent.type === 'shield') {
+            hasShield = true;
+            const player = document.getElementById('player');
+            player.style.filter = 'drop-shadow(0 0 12px rgba(255,199,44,0.8))';
+            if (shieldTimeout) clearTimeout(shieldTimeout);
+            shieldTimeout = setTimeout(() => {
+              hasShield = false;
+              player.style.filter = 'drop-shadow(0 2px 8px rgba(255,107,0,0.5))';
+            }, 5000);
+          }
+          if (ent.type === 'speed') {
+            gameSpeed += 0.5;
+          }
+        }
+      }
+
+      // Remove off-screen
+      if (ent.x < -60) {
+        ent.el.remove();
+        entities.splice(i, 1);
+      }
+    }
+
+    updateHUD();
+  }
+
+  function updateHUD() {
+    document.getElementById('hud-score').textContent = score;
+    document.getElementById('hud-dist').textContent = Math.floor(distance) + 'м';
+  }
+
+  function endGame(survived) {
+    gameRunning = false;
+    clearInterval(gameLoop);
+    clearInterval(spawnLoop);
+    clearInterval(timerLoop);
+
+    totalGames++;
+    totalScore += score;
+    if (survived) dogsSaved++;
+    if (score > bestScore) bestScore = score;
+
+    // Update game over screen
+    document.getElementById('go-score').textContent = score;
+    if (survived) {
+      document.getElementById('game-over').querySelector('.go-emoji').textContent = '🐕';
+      document.getElementById('game-over').querySelector('.go-title').textContent = 'Собака спасена!';
+      document.getElementById('game-over').querySelector('.go-sub').textContent = 'Отличная работа, агент!';
+    } else {
+      document.getElementById('game-over').querySelector('.go-emoji').textContent = '💥';
+      document.getElementById('game-over').querySelector('.go-title').textContent = 'Столкновение!';
+      document.getElementById('game-over').querySelector('.go-sub').textContent = 'Попробуйте ещё раз, агент.';
+    }
+
+    document.getElementById('game-over').classList.add('show');
+
+    // Player shake on collision
+    if (!survived) {
+      const player = document.getElementById('player');
+      player.style.animation = 'none';
+      player.offsetHeight;
+      player.style.transition = 'none';
+      player.style.transform = 'scale(1.3)';
+      player.style.filter = 'drop-shadow(0 0 12px rgba(255,0,0,0.8))';
+      setTimeout(() => {
+        player.style.transform = 'scale(1)';
+      }, 200);
+    }
+
+    updateStats();
+  }
+
+  function stopGame() {
+    gameRunning = false;
+    clearInterval(gameLoop);
+    clearInterval(spawnLoop);
+    clearInterval(timerLoop);
+  }
+
+  function restartGame() {
+    // Clear entities
+    document.querySelectorAll('.entity').forEach(e => e.remove());
+    document.querySelectorAll('.bg-element').forEach(e => e.remove());
+    const player = document.getElementById('player');
+    player.style.filter = 'drop-shadow(0 2px 8px rgba(255,107,0,0.5))';
+    player.style.transform = '';
+    document.getElementById('hud-timer').style.background = 'rgba(255,107,0,0.3)';
+    beginGame();
+  }
+
+  function exitGame() {
+    stopGame();
+    document.querySelectorAll('.entity').forEach(e => e.remove());
+    document.querySelectorAll('.bg-element').forEach(e => e.remove());
+    const player = document.getElementById('player');
+    player.style.filter = 'drop-shadow(0 2px 8px rgba(255,107,0,0.5))';
+    player.style.transform = '';
+    document.getElementById('hud-timer').style.background = 'rgba(255,107,0,0.3)';
+    // Go back to mission
+    document.getElementById('app-hdr').style.display = '';
+    document.getElementById('bnav').style.display = '';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('s-mission').classList.add('active');
+    document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.bn')[0].classList.add('on');
+  }
+
+  function updateStats() {
+    // Mission screen
+    document.getElementById('total-games').textContent = totalGames;
+    document.getElementById('total-score').textContent = totalScore;
+    document.getElementById('dogs-saved').textContent = dogsSaved;
+    document.getElementById('best-score-1').textContent = bestScore;
+
+    // Rewards screen
+    document.getElementById('rw-best').textContent = bestScore;
+    document.getElementById('rw-games').textContent = totalGames;
+    document.getElementById('rw-dogs').textContent = dogsSaved;
+
+    // Profile screen
+    document.getElementById('pr-games').textContent = totalGames;
+    document.getElementById('pr-score').textContent = totalScore;
+    document.getElementById('pr-dogs').textContent = dogsSaved;
+
+    // Leaderboard
+    document.getElementById('lb-your-score').textContent = bestScore.toLocaleString('ru-RU');
+  }
+</script>
+
+</body>
+</html>

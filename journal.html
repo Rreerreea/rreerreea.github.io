@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UTOPIA / Journal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=PT+Mono&family=Inter:wght@400;500;600&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --bg: #FAFAF8;
+    --text: #0A0A0A;
+    --text-secondary: #888;
+    --accent: #0A0A0A;
+    --border: #E0E0DC;
+    --tag-bg: transparent;
+    --tag-border: #0A0A0A;
+    --hover-bg: #F0F0EC;
+    --card-bg: #fff;
+    --mono: 'PT Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --radius: 1.25rem;
+    --max-w: 1200px;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(250, 250, 248, 0.85);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-logo {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .header-logo span {
+    color: var(--text-secondary);
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .header-nav a {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .header-nav a:hover,
+  .header-nav a.active {
+    color: var(--text);
+  }
+
+  /* ─── HERO (issue #1) ─── */
+  .hero {
+    padding: 8rem 2.5rem 0;
+    max-width: var(--max-w);
+    margin: 0 auto;
+  }
+
+  .hero-issue {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .hero-issue::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--tag-border);
+    border-radius: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+  }
+
+  .hero-title {
+    font-family: var(--sans);
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    max-width: 14ch;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+  }
+
+  .hero-desc {
+    font-family: var(--sans);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 520px;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-meta {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-meta span {
+    margin: 0 0.5rem;
+    opacity: 0.4;
+  }
+
+  .hero-cover {
+    width: 100%;
+    aspect-ratio: 21 / 9;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .hero-cover:hover {
+    transform: scale(0.985);
+  }
+
+  .hero-cover-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative elements for hero cover */
+  .hero-cover .deco {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+  }
+
+  .hero-cover .deco-1 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, #e94560 0%, transparent 70%);
+    top: -100px;
+    right: -50px;
+  }
+
+  .hero-cover .deco-2 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, #533483 0%, transparent 70%);
+    bottom: -80px;
+    left: 10%;
+  }
+
+  .hero-cover .deco-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, #0f3460 0%, transparent 70%);
+    top: 20%;
+    left: 30%;
+    opacity: 0.3;
+  }
+
+  .hero-cover-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    z-index: 1;
+  }
+
+  /* ─── READ MORE LINK ─── */
+  .read-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.75rem 0;
+    position: relative;
+    transition: gap 0.3s;
+  }
+
+  .read-link:hover {
+    gap: 0.85rem;
+  }
+
+  .read-link::after {
+    content: '→';
+    transition: transform 0.3s;
+  }
+
+  .read-link:hover::after {
+    transform: translateX(2px);
+  }
+
+  /* ─── SECTION DIVIDER ─── */
+  .section-divider {
+    max-width: var(--max-w);
+    margin: 4rem auto 0;
+    padding: 0 2.5rem;
+  }
+
+  .section-divider-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-divider-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .section-divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── FEED LIST ─── */
+  .feed {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 1rem 2.5rem 6rem;
+  }
+
+  .feed-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: background 0.3s;
+    cursor: pointer;
+  }
+
+  .feed-item:first-child {
+    border-top: 1px solid var(--border);
+  }
+
+  .feed-item:hover {
+    background: var(--hover-bg);
+    margin: 0 -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0.75rem;
+    border-color: transparent;
+  }
+
+  .feed-item:hover + .feed-item {
+    border-top-color: transparent;
+  }
+
+  .feed-item-number {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    padding-top: 0.25rem;
+    min-width: 2rem;
+  }
+
+  .feed-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .feed-item-tag {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .feed-item-title {
+    font-family: var(--sans);
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+
+  .feed-item:hover .feed-item-title {
+    color: var(--accent);
+  }
+
+  .feed-item-desc {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 560px;
+  }
+
+  .feed-item-meta {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.03em;
+    padding-top: 0.25rem;
+    white-space: nowrap;
+  }
+
+  /* ─── PREVIEW IMAGE ON HOVER ─── */
+  .feed-item-preview {
+    position: fixed;
+    width: 280px;
+    height: 180px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.35s, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 50;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  .feed-item-preview.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .feed-item-preview-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── ARTICLE PAGE ─── */
+  .article-page {
+    display: none;
+    min-height: 100vh;
+  }
+
+  .article-page.active {
+    display: block;
+  }
+
+  .article-back {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(250, 250, 248, 0.85);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .article-back a {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .article-back a:hover {
+    color: var(--text);
+  }
+
+  .article-header {
+    padding: 8rem 2.5rem 0;
+    max-width: var(--max-w);
+    margin: 0 auto;
+  }
+
+  .article-body {
+    max-width: 680px;
+    margin: 3rem auto;
+    padding: 0 2.5rem;
+  }
+
+  .article-body p {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: #333;
+    margin-bottom: 1.5rem;
+  }
+
+  .article-body h2 {
+    font-family: var(--sans);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 3rem 0 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .article-body-wide {
+    max-width: 960px;
+    margin: 2.5rem auto;
+    padding: 0 2.5rem;
+  }
+
+  .article-body-wide .img-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .article-next {
+    max-width: 680px;
+    margin: 4rem auto;
+    padding: 3rem 2.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .article-next-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .article-next a {
+    font-family: var(--sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: gap 0.3s;
+  }
+
+  .article-next a:hover {
+    gap: 1rem;
+  }
+
+  /* ─── FOOTER ─── */
+  .footer {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 3rem 2.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-left {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-right {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-right a {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.3s;
+  }
+
+  .footer-right a:hover {
+    color: var(--text);
+  }
+
+  /* ─── FILTERS ─── */
+  .filters {
+    max-width: var(--max-w);
+    margin: 3rem auto 0;
+    padding: 0 2.5rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .filter-btn:hover,
+  .filter-btn.active {
+    border-color: var(--text);
+    color: var(--text);
+    background: var(--card-bg);
+  }
+
+  /* ─── ANIMATIONS ─── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.6s ease forwards;
+  }
+
+  .fade-in:nth-child(1) { animation-delay: 0.1s; }
+  .fade-in:nth-child(2) { animation-delay: 0.2s; }
+  .fade-in:nth-child(3) { animation-delay: 0.3s; }
+  .fade-in:nth-child(4) { animation-delay: 0.4s; }
+  .fade-in:nth-child(5) { animation-delay: 0.5s; }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stagger {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .stagger.visible {
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  /* ─── JOURNAL PAGE ─── */
+  .journal-page {
+    transition: opacity 0.3s;
+  }
+
+  .journal-page.hidden {
+    display: none;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .header-nav {
+      gap: 1rem;
+    }
+
+    .hero {
+      padding: 6.5rem 1.5rem 0;
+    }
+
+    .hero-title {
+      font-size: 2rem;
+    }
+
+    .feed {
+      padding: 1rem 1.5rem 4rem;
+    }
+
+    .feed-item {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+
+    .feed-item-number {
+      display: none;
+    }
+
+    .feed-item-meta {
+      padding-top: 0.5rem;
+    }
+
+    .filters {
+      padding: 0 1.5rem;
+    }
+
+    .section-divider {
+      padding: 0 1.5rem;
+    }
+
+    .footer {
+      padding: 2rem 1.5rem;
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════ JOURNAL LIST PAGE ═══════ -->
+<div class="journal-page" id="journalPage">
+
+  <!-- Header -->
+  <header class="header">
+    <a href="#" class="header-logo">UTOPIA <span>/ Journal</span></a>
+    <nav class="header-nav">
+      <a href="https://utopiait.ru" target="_blank">Студия</a>
+      <a href="#" class="active">Журнал</a>
+      <a href="#">GClub</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-issue fade-in">Свежее — Февраль 2026</div>
+
+    <div class="fade-in" style="animation-delay: 0.15s">
+      <span class="hero-tag">кейс</span>
+    </div>
+
+    <h1 class="hero-title fade-in" style="animation-delay: 0.2s">
+      Как геймификация увеличила retention в&nbsp;3.2 раза
+    </h1>
+
+    <p class="hero-desc fade-in" style="animation-delay: 0.25s">
+      Разбираем механики, которые мы внедрили в&nbsp;программу лояльности сети «Добрый» — от&nbsp;merge-механик до&nbsp;streak-систем. Что сработало, а&nbsp;что нет.
+    </p>
+
+    <div class="hero-meta fade-in" style="animation-delay: 0.3s">
+      12 февраля 2026<span>·</span>8&nbsp;мин<span>·</span>Команда Utopia
+    </div>
+
+    <a href="#" class="read-link fade-in" style="animation-delay: 0.33s" onclick="openArticle(event, 'article-1')">Читать</a>
+
+    <div class="hero-cover fade-in" style="animation-delay: 0.4s" onclick="openArticle(event, 'article-1')">
+      <div class="hero-cover-inner">
+        <div class="deco deco-1"></div>
+        <div class="deco deco-2"></div>
+        <div class="deco deco-3"></div>
+        <span class="hero-cover-label">обложка кейса</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <div class="filters fade-in" style="animation-delay: 0.5s">
+    <button class="filter-btn active">Все</button>
+    <button class="filter-btn">Кейсы</button>
+    <button class="filter-btn">Процесс</button>
+    <button class="filter-btn">Мнение</button>
+    <button class="filter-btn">Обзор</button>
+  </div>
+
+  <!-- Divider -->
+  <div class="section-divider fade-in" style="animation-delay: 0.55s">
+    <div class="section-divider-inner">
+      <span class="section-divider-label">Архив</span>
+      <div class="section-divider-line"></div>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed">
+
+    <a href="#" class="feed-item stagger" onclick="openArticle(event, 'article-2')">
+      <div class="feed-item-number">02</div>
+      <div class="feed-item-content">
+        <div class="feed-item-tag">процесс</div>
+        <div class="feed-item-title">Наш стек для быстрого прототипирования игровых механик</div>
+        <div class="feed-item-desc">Three.js, Figma-токены, и&nbsp;почему мы&nbsp;отказались от Unity для веб-проектов. Внутренняя кухня студии.</div>
+      </div>
+      <div class="feed-item-meta">28.01.2026<br>5 мин</div>
+    </a>
+
+    <a href="#" class="feed-item stagger" onclick="openArticle(event, 'article-3')">
+      <div class="feed-item-number">03</div>
+      <div class="feed-item-content">
+        <div class="feed-item-tag">мнение</div>
+        <div class="feed-item-title">Геймификация — это не&nbsp;баллы и&nbsp;бейджи</div>
+        <div class="feed-item-desc">Почему 90% «геймификаций» на&nbsp;рынке — это обёртка без содержания, и&nbsp;что мы предлагаем вместо этого.</div>
+      </div>
+      <div class="feed-item-meta">15.01.2026<br>12 мин</div>
+    </a>
+
+    <a href="#" class="feed-item stagger" onclick="openArticle(event, 'article-4')">
+      <div class="feed-item-number">04</div>
+      <div class="feed-item-content">
+        <div class="feed-item-tag">кейс</div>
+        <div class="feed-item-title">СберЛизинг: интерактивный комикс для обучения клиентов</div>
+        <div class="feed-item-desc">Branching-story из&nbsp;5&nbsp;глав, которая объясняет лизинг понятнее любого лендинга. Механика и&nbsp;результаты.</div>
+      </div>
+      <div class="feed-item-meta">20.12.2025<br>10 мин</div>
+    </a>
+
+    <a href="#" class="feed-item stagger" onclick="openArticle(event, 'article-5')">
+      <div class="feed-item-number">05</div>
+      <div class="feed-item-content">
+        <div class="feed-item-tag">обзор</div>
+        <div class="feed-item-title">5&nbsp;игровых механик, которые работают в&nbsp;B2B</div>
+        <div class="feed-item-desc">Hill Climb Racing, Flappy Bird, Merge — как адаптировать казуальные жанры под корпоративные задачи.</div>
+      </div>
+      <div class="feed-item-meta">05.12.2025<br>7 мин</div>
+    </a>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">© 2026 Utopia IT</div>
+    <div class="footer-right">
+      <a href="https://utopiait.ru" target="_blank">utopiait.ru</a>
+      <a href="#">Telegram</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ ARTICLE PAGE ═══════ -->
+<div class="article-page" id="articlePage">
+  <header class="article-back">
+    <a href="#" onclick="closeArticle(event)">← Журнал</a>
+    <a href="#" class="header-logo" onclick="closeArticle(event)">UTOPIA <span>/ Journal</span></a>
+  </header>
+
+  <div class="article-header">
+    <div class="hero-issue fade-in">Кейс — Февраль 2026</div>
+    <div class="fade-in" style="animation-delay: 0.1s">
+      <span class="hero-tag">кейс</span>
+    </div>
+    <h1 class="hero-title fade-in" style="animation-delay: 0.15s">
+      Как геймификация увеличила retention в&nbsp;3.2 раза
+    </h1>
+    <div class="hero-meta fade-in" style="animation-delay: 0.2s">
+      12 февраля 2026<span>·</span>8&nbsp;мин<span>·</span>Команда Utopia
+    </div>
+    <div class="hero-cover fade-in" style="animation-delay: 0.3s; margin-top: 2rem;">
+      <div class="hero-cover-inner">
+        <div class="deco deco-1"></div>
+        <div class="deco deco-2"></div>
+        <div class="deco deco-3"></div>
+        <span class="hero-cover-label">обложка кейса</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="article-body fade-in" style="animation-delay: 0.4s">
+    <p>
+      Когда «Добрый» пришёл к нам с задачей «сделать что-то интересное с программой лояльности»,
+      мы сразу поняли — стандартные баллы и скидки не работают. Retention у существующей программы
+      был 12% на 30-й день. Нам нужно было принципиально другое решение.
+    </p>
+
+    <h2>Проблема</h2>
+    <p>
+      Классические программы лояльности в FMCG работают по одной схеме: купи → отсканируй чек →
+      получи баллы → потрать на скидку. Проблема в том, что этот цикл не создаёт привычку.
+      Пользователь забывает о приложении через 3 дня после установки.
+    </p>
+
+    <h2>Решение: Merge-механика</h2>
+    <p>
+      Мы взяли за основу merge-игры — жанр, который удерживает пользователей месяцами.
+      Суть: каждый зарегистрированный чек даёт игровой предмет. Одинаковые предметы можно
+      объединять, получая более ценные. Это создаёт коллекционирование, прогрессию и
+      ежедневную мотивацию возвращаться.
+    </p>
+  </div>
+
+  <div class="article-body-wide fade-in" style="animation-delay: 0.45s">
+    <div class="img-placeholder" style="background: linear-gradient(135deg, #0f3460, #533483);">
+      Скриншот интерфейса merge-механики
+    </div>
+  </div>
+
+  <div class="article-body fade-in" style="animation-delay: 0.5s">
+    <h2>Результаты</h2>
+    <p>
+      За первые 3 месяца после запуска: retention 30-го дня вырос с 12% до 38.4% (×3.2),
+      среднее время сессии — 4.2 минуты (было 0.8), DAU вырос в 2.7 раза.
+      Конверсия в повторную покупку через приложение — 23%.
+    </p>
+    <p>
+      Ключевой инсайт: пользователи возвращались не за скидками, а за прогрессией в игре.
+      Скидки были приятным бонусом, но не основным драйвером.
+    </p>
+  </div>
+
+  <div class="article-next">
+    <div class="article-next-label">Следующий</div>
+    <a href="#" onclick="closeArticle(event)">Наш стек для прототипирования →</a>
+  </div>
+</div>
+
+<!-- Floating preview -->
+<div class="feed-item-preview" id="floatingPreview">
+  <div class="feed-item-preview-inner" id="floatingPreviewInner" style="background: linear-gradient(135deg, #1a1a2e, #0f3460);"></div>
+</div>
+
+<script>
+  // ─── Stagger animations on scroll ───
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.stagger').forEach(el => observer.observe(el));
+
+  // ─── Filter buttons ───
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ─── Floating preview on feed items ───
+  const preview = document.getElementById('floatingPreview');
+  const previewInner = document.getElementById('floatingPreviewInner');
+
+  const gradients = [
+    'linear-gradient(135deg, #0f3460, #16213e)',
+    'linear-gradient(135deg, #533483, #0f3460)',
+    'linear-gradient(135deg, #1a1a2e, #e94560)',
+    'linear-gradient(135deg, #16213e, #533483)',
+  ];
+
+  document.querySelectorAll('.feed-item').forEach((item, i) => {
+    item.addEventListener('mouseenter', () => {
+      previewInner.style.background = gradients[i % gradients.length];
+      preview.classList.add('visible');
+    });
+
+    item.addEventListener('mousemove', (e) => {
+      preview.style.left = (e.clientX + 20) + 'px';
+      preview.style.top = (e.clientY - 90) + 'px';
+    });
+
+    item.addEventListener('mouseleave', () => {
+      preview.classList.remove('visible');
+    });
+  });
+
+  // ─── Article navigation ───
+  function openArticle(e, id) {
+    e.preventDefault();
+    document.getElementById('journalPage').classList.add('hidden');
+    document.getElementById('articlePage').classList.add('active');
+    window.scrollTo(0, 0);
+
+    // Re-trigger animations
+    document.getElementById('articlePage').querySelectorAll('.fade-in').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = '';
+    });
+  }
+
+  function closeArticle(e) {
+    e.preventDefault();
+    document.getElementById('articlePage').classList.remove('active');
+    document.getElementById('journalPage').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+</script>
+
+</body>
+</html>

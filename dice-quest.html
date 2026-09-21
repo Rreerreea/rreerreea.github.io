@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dice Quest</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #0d0d1a;
+  --panel: #1a1a2e;
+  --border: #2a2a4a;
+  --gold: #f0c040;
+  --red: #e04040;
+  --green: #40c060;
+  --blue: #5090e0;
+  --text: #d0d0e0;
+  --dim: #606070;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  gap: 14px;
+}
+
+h1 {
+  font-size: 26px;
+  color: var(--gold);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+/* ── Stats ── */
+.stats {
+  display: flex;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 20px;
+  width: 100%;
+  max-width: 700px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+.stat .label { color: var(--dim); font-size: 11px; }
+.stat .value { font-weight: bold; }
+.stat.s-hp    .value { color: var(--red); }
+.stat.s-gold  .value { color: var(--gold); }
+.stat.s-level .value { color: var(--blue); }
+.stat.s-step  .value { color: var(--dim); }
+.hp-bar { width: 72px; height: 7px; background: #333; border-radius: 4px; overflow:hidden; }
+.hp-bar-fill { height:100%; background: var(--red); transition: width .3s; }
+
+/* ── Board ── */
+.board-wrapper {
+  width: 100%;
+  max-width: 700px;
+  overflow: hidden;
+}
+.board {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 20px;
+}
+.tile {
+  width: 80px;
+  flex-shrink: 0;
+  height: 96px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  position: relative;
+  transition: opacity .3s, border-color .3s, box-shadow .3s;
+}
+.tile.active {
+  border-color: var(--gold);
+  background: #1e1e10;
+  box-shadow: 0 0 22px rgba(240,192,64,.35);
+}
+.tile.visited { opacity: .35; }
+.tile .icon { font-size: 28px; }
+.tile .name  { font-size: 10px; color: var(--dim); text-align:center; }
+.tile .num   { position:absolute; top:4px; right:6px; font-size:9px; color:var(--dim); }
+.tile .marker{
+  position:absolute; bottom:-18px; left:50%;
+  transform:translateX(-50%);
+  font-size:22px;
+  filter: drop-shadow(0 0 6px rgba(80,144,224,.8));
+}
+
+/* ── Dice area ── */
+.dice-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.dice {
+  width: 80px; height: 80px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  border-radius: 18px;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 42px;
+  cursor: pointer;
+  user-select: none;
+  transition: all .2s;
+}
+.dice:hover:not(.disabled) {
+  border-color: var(--gold);
+  box-shadow: 0 0 22px rgba(240,192,64,.4);
+  transform: scale(1.06);
+}
+.dice.disabled { opacity:.4; cursor:not-allowed; }
+@keyframes roll {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(20deg) scale(1.15); }
+  75%  { transform: rotate(-20deg) scale(1.15); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+.dice.rolling { animation: roll .45s ease; }
+.roll-hint { font-size: 15px; color: var(--dim); min-height: 22px; }
+
+/* ── Event panel ── */
+.event-panel {
+  width: 100%; max-width: 700px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: none;
+}
+.event-panel.visible { display: block; }
+.event-panel h3 { font-size: 18px; margin-bottom: 12px; }
+
+/* ── Combat ── */
+.combat-grid {
+  display: grid;
+  grid-template-columns: 1fr 48px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.fighter {
+  background: #111;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.fighter .f-icon { font-size: 34px; }
+.fighter .f-name { font-size: 12px; color: var(--dim); margin: 4px 0; }
+.fighter .f-hp   { font-size: 18px; font-weight:bold; }
+.fighter.f-player { border: 2px solid var(--blue); }
+.fighter.f-enemy  { border: 2px solid var(--red); }
+.vs { text-align:center; font-size:18px; color:var(--dim); }
+#combat-msg { margin-top:10px; font-size:13px; color:var(--dim); min-height:18px; }
+
+/* ── Buttons ── */
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top: 4px; }
+button {
+  padding: 9px 18px;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-size: 14px; font-weight:bold;
+  transition: all .15s;
+}
+button:active { transform: scale(.96); }
+.btn-primary   { background: var(--gold);   color:#111; }
+.btn-primary:hover   { background:#ffd060; }
+.btn-danger    { background: var(--red);    color:#fff; }
+.btn-secondary { background: var(--border); color:var(--text); }
+.btn-secondary:hover { background:#3a3a5a; }
+.btn-green     { background: var(--green);  color:#111; }
+.btn-green:hover { background: #55d875; }
+
+/* ── Log ── */
+.log {
+  width:100%; max-width:700px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  max-height: 90px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+.log-entry { line-height:1.5; }
+.le-good { color: var(--green); }
+.le-bad  { color: var(--red);   }
+.le-info { color: var(--blue);  }
+.le-gold { color: var(--gold);  }
+</style>
+</head>
+<body>
+
+<h1>⚔️ Dice Quest</h1>
+
+<div class="stats">
+  <div class="stat s-level">
+    <span>⭐</span><span class="label">Уровень</span>
+    <span class="value" id="s-level">1</span>
+  </div>
+  <div class="stat s-hp">
+    <span>❤️</span><span class="label">HP</span>
+    <span class="value" id="s-hp">30/30</span>
+    <div class="hp-bar"><div class="hp-bar-fill" id="hp-fill"></div></div>
+  </div>
+  <div class="stat s-gold">
+    <span>💰</span><span class="label">Золото</span>
+    <span class="value" id="s-gold">10</span>
+  </div>
+  <div class="stat">
+    <span>⚔️</span><span class="label">Атака</span>
+    <span class="value" id="s-atk">5</span>
+  </div>
+  <div class="stat s-step">
+    <span>📍</span><span class="label">Шаг</span>
+    <span class="value" id="s-step">0</span>
+  </div>
+</div>
+
+<div class="board-wrapper">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="dice-area">
+  <div class="dice" id="dice" onclick="rollDice()">🎲</div>
+  <div class="roll-hint" id="hint">Нажми на кубик!</div>
+</div>
+
+<div class="event-panel" id="event-panel">
+  <div id="event-content"></div>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+/* ═══════════════════════ DATA ═══════════════════════ */
+const FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+const TILE_DEF = [
+  { id:'treasure', icon:'💰', name:'Клад',       w:25 },
+  { id:'monster',  icon:'👹', name:'Монстр',     w:30 },
+  { id:'heal',     icon:'🍄', name:'Исцеление',  w:15 },
+  { id:'trap',     icon:'🪤', name:'Ловушка',    w:15 },
+  { id:'shop',     icon:'🏪', name:'Торговец',   w:10 },
+  { id:'empty',    icon:'🌿', name:'Поляна',     w:5  },
+];
+
+const MONSTERS = [
+  { name:'Гоблин',  icon:'👺', hp:1.0, atk:1.0, xp:3,  g:3  },
+  { name:'Скелет',  icon:'💀', hp:1.2, atk:0.8, xp:4,  g:2  },
+  { name:'Орк',     icon:'👹', hp:1.5, atk:1.2, xp:5,  g:5  },
+  { name:'Тролль',  icon:'🧌', hp:1.8, atk:1.5, xp:8,  g:8  },
+  { name:'Призрак', icon:'👻', hp:0.8, atk:1.8, xp:6,  g:4  },
+  { name:'Дракон',  icon:'🐉', hp:2.5, atk:2.0, xp:15, g:20 },
+];
+
+/* ═══════════════════════ STATE ══════════════════════ */
+const G = {
+  pos:0, hp:30, maxHp:30, gold:10,
+  level:1, xp:0, xpNext:10, atk:5,
+  tiles:[], phase:'roll', combat:null,
+};
+
+/* ═══════════════════════ TILES ══════════════════════ */
+function genTile(i) {
+  if (i === 0) return { type:'empty', icon:'🏰', name:'Старт', vis:true };
+  const total = TILE_DEF.reduce((s,t)=>s+t.w, 0);
+  let r = Math.random() * total;
+  let chosen = TILE_DEF[0];
+  for (const t of TILE_DEF) { r -= t.w; if (r <= 0) { chosen=t; break; } }
+  return { type:chosen.id, icon:chosen.icon, name:chosen.name, vis:false, i };
+}
+
+function ensure(upTo) {
+  while (G.tiles.length <= upTo+5) G.tiles.push(genTile(G.tiles.length));
+}
+
+/* ═══════════════════════ RENDER ═════════════════════ */
+function renderBoard() {
+  const board = document.getElementById('board');
+  const pos = G.pos;
+  const start = Math.max(0, pos - 3);
+  const end   = pos + 5;
+  ensure(end);
+
+  board.innerHTML = '';
+  for (let i = start; i <= end; i++) {
+    const t = G.tiles[i];
+    const active   = i === pos;
+    const visited  = t.vis && i < pos;
+    const unknown  = !t.vis && i > pos;
+
+    const div = document.createElement('div');
+    div.className = 'tile' + (active ? ' active' : '') + (visited ? ' visited' : '');
+    div.innerHTML = `
+      <span class="num">#${i}</span>
+      <span class="icon">${unknown ? '❓' : t.icon}</span>
+      <span class="name">${unknown ? '???' : t.name}</span>
+      ${active ? '<span class="marker">🧙</span>' : ''}
+    `;
+    board.appendChild(div);
+  }
+}
+
+function updateStats() {
+  document.getElementById('s-level').textContent = G.level;
+  document.getElementById('s-hp').textContent    = `${G.hp}/${G.maxHp}`;
+  document.getElementById('s-gold').textContent  = G.gold;
+  document.getElementById('s-atk').textContent   = G.atk;
+  document.getElementById('s-step').textContent  = G.pos;
+  document.getElementById('hp-fill').style.width = `${G.hp/G.maxHp*100}%`;
+}
+
+function log(msg, cls='') {
+  const el = document.getElementById('log');
+  const d  = document.createElement('div');
+  d.className = 'log-entry ' + cls;
+  d.textContent = msg;
+  el.prepend(d);
+  while (el.children.length > 40) el.lastChild.remove();
+}
+
+/* ═══════════════════════ DICE ═══════════════════════ */
+function rollDice() {
+  if (G.phase !== 'roll') return;
+  G.phase = 'moving';
+
+  const dice = document.getElementById('dice');
+  dice.classList.add('rolling', 'disabled');
+  document.getElementById('hint').textContent = '...';
+
+  let ticks = 0;
+  const iv = setInterval(() => {
+    dice.textContent = FACES[Math.floor(Math.random()*6)];
+    if (++ticks >= 8) {
+      clearInterval(iv);
+      const roll = Math.floor(Math.random()*6) + 1;
+      dice.textContent = FACES[roll-1];
+      dice.classList.remove('rolling');
+      document.getElementById('hint').textContent = `Выпало: ${roll}`;
+      movePlayer(roll);
+    }
+  }, 60);
+}
+
+function movePlayer(steps) {
+  let moved = 0;
+  function step() {
+    if (moved >= steps) { land(); return; }
+    moved++;
+    G.pos++;
+    ensure(G.pos + 5);
+    renderBoard();
+    updateStats();
+    setTimeout(step, 160);
+  }
+  step();
+}
+
+/* ═══════════════════════ LAND ═══════════════════════ */
+function land() {
+  const t = G.tiles[G.pos];
+  t.vis = true;
+  renderBoard();
+  log(`Шаг ${G.pos}: "${t.name}"`, 'le-info');
+
+  switch (t.type) {
+    case 'treasure': doTreasure(); break;
+    case 'monster':  doMonster();  break;
+    case 'heal':     doHeal();     break;
+    case 'trap':     doTrap();     break;
+    case 'shop':     doShop();     break;
+    default:         doEmpty();
+  }
+}
+
+/* ═══════════════════════ EVENTS ═════════════════════ */
+function doTreasure() {
+  const gold = Math.floor(3 + Math.random()*8*Math.sqrt(G.level));
+  G.gold += gold;
+  updateStats();
+  log(`💰 Найдено ${gold} золота!`, 'le-gold');
+  simpleEvent('💰 Клад!', `Ты открыл сундук с сокровищами.`, `+${gold} 💰`, '#f0c040');
+}
+
+function doHeal() {
+  const hp = Math.floor(4 + Math.random()*5 + G.level);
+  G.hp = Math.min(G.maxHp, G.hp + hp);
+  updateStats();
+  log(`🍄 Исцелился на ${hp} HP`, 'le-good');
+  simpleEvent('🍄 Целебный гриб', 'Магический гриб восстанавливает силы.', `+${hp} ❤️`, '#40c060');
+}
+
+function doTrap() {
+  const dmg = Math.floor(2 + Math.random()*4 + G.level*0.6);
+  G.hp = Math.max(0, G.hp - dmg);
+  updateStats();
+  log(`🪤 Ловушка! -${dmg} HP`, 'le-bad');
+  if (G.hp <= 0) { gameOver(); return; }
+  simpleEvent('🪤 Ловушка!', 'Скрытая ловушка срабатывает.', `-${dmg} ❤️`, '#e04040');
+}
+
+function doEmpty() {
+  log('🌿 Ничего не произошло.');
+  done();
+}
+
+function doMonster() {
+  const base = MONSTERS[Math.floor(Math.random()*MONSTERS.length)];
+  const mult = 1 + G.pos / 25;
+  G.combat = {
+    name: base.name, icon: base.icon,
+    hp:   Math.floor(8 * base.hp  * mult),
+    maxHp:Math.floor(8 * base.hp  * mult),
+    atk:  Math.floor(3 * base.atk * mult),
+    xp: base.xp, gold: base.gold,
+  };
+  G.phase = 'combat';
+  log(`⚔️ ${base.name} нападает!`, 'le-bad');
+  showCombat();
+}
+
+function showCombat() {
+  const m = G.combat;
+  show(`
+    <h3>⚔️ Бой с ${m.name}!</h3>
+    <div class="combat-grid">
+      <div class="fighter f-player">
+        <div class="f-icon">🧙</div>
+        <div class="f-name">Герой</div>
+        <div class="f-hp" id="php" style="color:var(--blue)">HP: ${G.hp}</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="fighter f-enemy">
+        <div class="f-icon">${m.icon}</div>
+        <div class="f-name">${m.name}</div>
+        <div class="f-hp" id="ehp" style="color:var(--red)">HP: ${m.hp}</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="cAtk()">⚔️ Атака</button>
+      <button class="btn-secondary" onclick="cFlee()">🏃 Бежать (-3 HP)</button>
+    </div>
+    <div id="combat-msg"></div>
+  `);
+}
+
+function cMsg(txt) {
+  const el = document.getElementById('combat-msg');
+  if (el) el.textContent = txt;
+}
+
+function updCombat() {
+  const p = document.getElementById('php');
+  const e = document.getElementById('ehp');
+  if (p) p.textContent = `HP: ${G.hp}`;
+  if (e) e.textContent = `HP: ${Math.max(0, G.combat.hp)}`;
+  updateStats();
+}
+
+function cAtk() {
+  const m = G.combat;
+  const pdmg = Math.floor(G.atk * (.8 + Math.random()*.4));
+  m.hp -= pdmg;
+  cMsg(`Ты: -${pdmg} HP монстру (${Math.max(0,m.hp)} осталось)`);
+  updCombat();
+
+  if (m.hp <= 0) { cWin(); return; }
+
+  setTimeout(() => {
+    const mdmg = Math.floor(m.atk * (.8 + Math.random()*.4));
+    G.hp = Math.max(0, G.hp - mdmg);
+    cMsg(`${m.name}: -${mdmg} HP тебе (у тебя ${G.hp} HP)`);
+    updCombat();
+    if (G.hp <= 0) gameOver();
+  }, 300);
+}
+
+function cFlee() {
+  G.hp = Math.max(1, G.hp - 3);
+  updateStats();
+  log('🏃 Сбежал! -3 HP', 'le-bad');
+  done();
+}
+
+function cWin() {
+  const m = G.combat;
+  G.gold += m.gold;
+  gainXp(m.xp);
+  log(`🏆 Победа! +${m.xp} XP, +${m.gold} золота`, 'le-good');
+  show(`
+    <h3 style="color:var(--green)">🏆 Победа!</h3>
+    <p style="margin-bottom:12px;color:var(--dim)">
+      Ты победил ${m.icon} ${m.name}!<br>
+      +${m.xp} XP &nbsp;·&nbsp; +${m.gold} 💰
+    </p>
+    <button class="btn-green" onclick="done()">Продолжить</button>
+  `);
+  G.combat = null;
+  updateStats();
+}
+
+function gainXp(amount) {
+  G.xp += amount;
+  while (G.xp >= G.xpNext) {
+    G.xp -= G.xpNext;
+    G.level++;
+    G.xpNext  = Math.floor(10 * Math.pow(1.5, G.level-1));
+    G.atk    += 2;
+    G.maxHp  += 8;
+    G.hp      = Math.min(G.hp + 8, G.maxHp);
+    log(`⭐ Уровень ${G.level}! +2 ATK, +8 maxHP`, 'le-gold');
+  }
+  updateStats();
+}
+
+/* ═══════════════════════ SHOP ═══════════════════════ */
+function doShop() {
+  G.phase = 'shop';
+  refreshShop();
+}
+
+function refreshShop() {
+  const h  = Math.floor(5  * G.level);
+  const a  = Math.floor(10 * G.level);
+  const hp = Math.floor(8  * G.level);
+  show(`
+    <h3>🏪 Торговец</h3>
+    <p style="margin-bottom:12px;color:var(--dim)">У тебя: 💰 ${G.gold}</p>
+    <div class="btn-row">
+      <button class="btn-primary"   onclick="buy('heal',${h})">💊 Лечение (${h}💰)</button>
+      <button class="btn-primary"   onclick="buy('atk',${a})">⚔️ +3 ATK (${a}💰)</button>
+      <button class="btn-primary"   onclick="buy('hp',${hp})">❤️ +10 HP (${hp}💰)</button>
+      <button class="btn-secondary" onclick="done()">Уйти</button>
+    </div>
+  `);
+}
+
+function buy(what, cost) {
+  if (G.gold < cost) { log('Недостаточно золота!', 'le-bad'); return; }
+  G.gold -= cost;
+  if (what === 'heal') {
+    const h = Math.floor(G.maxHp * .5);
+    G.hp = Math.min(G.maxHp, G.hp + h);
+    log(`💊 +${h} HP`, 'le-good');
+  } else if (what === 'atk') {
+    G.atk += 3;
+    log('⚔️ +3 ATK', 'le-good');
+  } else {
+    G.maxHp += 10; G.hp = Math.min(G.hp+10, G.maxHp);
+    log('❤️ +10 макс. HP', 'le-good');
+  }
+  updateStats();
+  refreshShop();
+}
+
+/* ═══════════════════════ UTILS ══════════════════════ */
+function show(html) {
+  const p = document.getElementById('event-panel');
+  p.classList.add('visible');
+  document.getElementById('event-content').innerHTML = html;
+}
+
+function simpleEvent(title, desc, reward, color) {
+  G.phase = 'event';
+  show(`
+    <h3>${title}</h3>
+    <p style="margin-bottom:8px;color:var(--dim)">${desc}</p>
+    <p style="font-size:22px;font-weight:bold;color:${color};margin-bottom:14px">${reward}</p>
+    <button class="btn-primary" onclick="done()">Продолжить</button>
+  `);
+}
+
+function done() {
+  G.phase  = 'roll';
+  G.combat = null;
+  document.getElementById('event-panel').classList.remove('visible');
+  const d = document.getElementById('dice');
+  d.classList.remove('disabled');
+  d.textContent = '🎲';
+  document.getElementById('hint').textContent = 'Бросай кубик!';
+  updateStats();
+  renderBoard();
+}
+
+function gameOver() {
+  G.phase = 'gameover';
+  show(`
+    <h3 style="color:var(--red)">💀 Герой пал!</h3>
+    <p style="margin-bottom:6px;color:var(--dim)">Дошёл до шага ${G.pos}, уровень ${G.level}</p>
+    <p style="font-size:20px;color:var(--gold);margin-bottom:14px">Золото: ${G.gold} 💰</p>
+    <button class="btn-primary" onclick="restart()">🔄 Заново</button>
+  `);
+  log(`💀 GAME OVER на шаге ${G.pos}`, 'le-bad');
+}
+
+function restart() {
+  Object.assign(G, {
+    pos:0, hp:30, maxHp:30, gold:10,
+    level:1, xp:0, xpNext:10, atk:5,
+    tiles:[], phase:'roll', combat:null,
+  });
+  init();
+}
+
+/* ═══════════════════════ INIT ═══════════════════════ */
+function init() {
+  ensure(10);
+  G.tiles[0].vis = true;
+  renderBoard();
+  updateStats();
+  document.getElementById('event-panel').classList.remove('visible');
+  const d = document.getElementById('dice');
+  d.textContent = '🎲';
+  d.classList.remove('disabled');
+  document.getElementById('hint').textContent = 'Нажми на кубик!';
+  document.getElementById('log').innerHTML = '';
+  log('🏰 Приключение начинается!', 'le-info');
+}
+
+init();
+</script>
+</body>
+</html>

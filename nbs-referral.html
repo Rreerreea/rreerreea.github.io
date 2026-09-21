@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>НБС — Мобильный банк</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  background: #C5D5E8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 0 40px;
+}
+
+.phone {
+  width: 390px;
+  height: 844px;
+  border-radius: 48px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 50px 120px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.15);
+  display: flex;
+  flex-direction: column;
+  background: #F0F5FF;
+  position: relative;
+}
+
+/* STATUS BAR */
+.sb {
+  height: 50px;
+  background: white;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 26px 8px;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid #E8EFFA;
+}
+.sb-t { font-size: 16px; font-weight: 700; color: #1A2744; letter-spacing: -0.3px; }
+.sb-r { display: flex; align-items: center; gap: 6px; }
+.sb-sig { display: flex; align-items: flex-end; gap: 1.5px; }
+.sb-sig span { background: #1A2744; border-radius: 1px; width: 3px; }
+.sb-bat-b { width: 22px; height: 11px; border: 1.5px solid #1A2744; border-radius: 2.5px; padding: 1.5px; display: flex; align-items: center; }
+.sb-bat-f { background: #1A2744; border-radius: 1px; height: 100%; width: 20%; }
+.sb-bat-tip { width: 2px; height: 4px; background: rgba(26,39,68,0.4); border-radius: 0 1px 1px 0; }
+.sb-pct { font-size: 10px; font-weight: 600; color: #1A2744; }
+.sb-wifi { font-size: 12px; }
+
+/* SCREENS */
+.screens { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ─── HEADER (shared style) ─── */
+.app-hdr {
+  background: white;
+  padding: 12px 20px 14px;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid #E8EFFA;
+}
+.hdr-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.user-block { display: flex; align-items: center; gap: 10px; }
+.user-ava {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #4B7CF3, #6B9AF5);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 800; color: white;
+  flex-shrink: 0;
+}
+.user-info .u-corp {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #EEF4FF;
+  border: 1px solid #BDD0FF;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 10px; font-weight: 700; color: #3B6FE0;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.user-info .u-name { font-size: 14px; font-weight: 700; color: #1A2744; }
+.hdr-actions { display: flex; gap: 8px; }
+.hbtn {
+  width: 36px; height: 36px;
+  background: #F0F5FF;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; position: relative;
+}
+.hbtn-dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; background: #F59E0B; border-radius: 50%; border: 2px solid white; }
+
+/* SCROLL */
+.scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.pad { padding: 14px 16px 12px; }
+
+/* ─── BALANCE BLOCK ─── */
+.bal-section { background: white; padding: 14px 20px 16px; border-bottom: 0.5px solid #E8EFFA; flex-shrink: 0; }
+.bal-label { font-size: 11px; color: #7A8BA6; font-weight: 500; margin-bottom: 4px; }
+.bal-row { display: flex; align-items: flex-end; justify-content: space-between; }
+.bal-amount { font-size: 32px; font-weight: 900; color: #1A2744; letter-spacing: -1px; }
+.invite-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: #4B7CF3; color: white;
+  border-radius: 20px; padding: 8px 14px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(75,124,243,0.35);
+}
+.bal-acc { font-size: 12px; color: #7A8BA6; margin-top: 4px; }
+
+/* BLUE PROGRESS CARD */
+.prog-card {
+  background: linear-gradient(135deg, #4B7CF3 0%, #6396F8 100%);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.prog-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 110px; height: 110px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+.pc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.pc-counter { font-size: 22px; font-weight: 900; color: white; }
+.pc-counter span { font-size: 14px; color: rgba(255,255,255,0.6); font-weight: 600; }
+.pc-btn { background: white; color: #4B7CF3; border-radius: 16px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+.pc-sub { font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 10px; }
+.pc-prize-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pc-prize-name { font-size: 14px; font-weight: 700; color: white; }
+.pc-prize-dots { color: rgba(255,255,255,0.5); }
+.pc-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.pc-fill { height: 100%; background: white; border-radius: 4px; width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); opacity: 0.9; }
+.pc-range { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.65); }
+
+/* WHITE CARD */
+.wc { background: white; border-radius: 18px; padding: 16px; margin-bottom: 10px; box-shadow: 0 2px 12px rgba(0,30,80,0.06); }
+.wc-title { font-size: 16px; font-weight: 800; color: #1A2744; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.wc-link { font-size: 12px; font-weight: 600; color: #4B7CF3; cursor: pointer; }
+.wc-section { font-size: 11px; font-weight: 700; color: #7A8BA6; text-transform: uppercase; letter-spacing: 0.8px; margin: 14px 0 10px; }
+.wc-section:first-of-type { margin-top: 0; }
+
+/* CODE BLOCK */
+.code-block {
+  background: #F0F5FF;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px; cursor: pointer;
+}
+.code-val { font-size: 22px; font-weight: 900; color: #4B7CF3; letter-spacing: 3px; flex: 1; }
+.code-copy { background: #4B7CF3; color: white; border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.share-row { display: flex; gap: 8px; }
+.share-btn { flex: 1; padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; }
+.sh-wa { background: #E8F8F0; color: #16A34A; }
+.sh-tg { background: #EFF6FF; color: #4B7CF3; }
+.sh-lnk { background: #F8FAFC; color: #64748B; }
+
+/* PERSONAL PROGRESS */
+.pers-hero {
+  background: linear-gradient(135deg, #4B7CF3, #6396F8);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 10px;
+}
+.ph-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.ph-count-label { font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+.ph-count { display: flex; align-items: baseline; gap: 5px; }
+.ph-n { font-size: 44px; font-weight: 900; color: white; line-height: 1; }
+.ph-of { font-size: 20px; color: rgba(255,255,255,0.5); }
+.ph-earn { text-align: right; }
+.ph-earn-label { font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+.ph-earn-val { font-size: 22px; font-weight: 900; color: #FCD34D; white-space: nowrap; }
+.ph-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.ph-fill { height: 100%; background: white; border-radius: 4px; width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); opacity: 0.9; }
+.ph-hint { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.45; }
+.ph-hint b { color: #FDE68A; }
+
+/* LEVEL ROW */
+.lvl-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #F0F5FF;
+}
+.lvl-row:last-child { border-bottom: none; padding-bottom: 0; }
+.lvl-row:first-child { padding-top: 0; }
+.lvl-ico {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.lvl-ico.done { background: #EEF9EE; }
+.lvl-ico.now { background: #EEF4FF; box-shadow: 0 0 0 3px #C7D9FF; }
+.lvl-ico.lock { background: #F5F7FB; opacity: 0.55; }
+.lvl-info { flex: 1; min-width: 0; }
+.lvl-name-row { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+.lvl-name { font-size: 14px; font-weight: 700; color: #1A2744; }
+.lvl-tag { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 7px; }
+.lt-done { background: #DCFCE7; color: #15803D; }
+.lt-now { background: #DBEAFE; color: #1D4ED8; }
+.lvl-sub { font-size: 11px; color: #7A8BA6; }
+.lvl-mini-bar { height: 3px; background: #E8EFFA; border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.lvl-mini-fill { height: 100%; background: #4B7CF3; border-radius: 2px; }
+.lvl-right { text-align: right; flex-shrink: 0; }
+.lvl-amt { font-size: 15px; font-weight: 800; color: #1A2744; }
+.lvl-amt.blue { color: #4B7CF3; }
+.lvl-per { font-size: 10px; color: #7A8BA6; margin-top: 2px; }
+
+/* FRIEND ROW */
+.fr-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #F0F5FF; }
+.fr-row:last-child { border-bottom: none; padding-bottom: 0; }
+.fr-row:first-child { padding-top: 0; }
+.fr-ava { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #DBEAFE, #EFF6FF); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.fr-info { flex: 1; min-width: 0; }
+.fr-name { font-size: 13px; font-weight: 600; color: #1A2744; }
+.fr-st { font-size: 11px; margin-top: 2px; }
+.fr-st.ok { color: #16A34A; }
+.fr-st.wait { color: #D97706; }
+.fr-st.new { color: #4B7CF3; }
+.fr-rew { font-size: 13px; font-weight: 800; flex-shrink: 0; color: #4B7CF3; }
+
+/* ─── PRODUCTS SCREEN ─── */
+.prod-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #F0F5FF;
+  cursor: pointer;
+}
+.prod-item:last-child { border-bottom: none; padding-bottom: 0; }
+.prod-item:first-child { padding-top: 0; }
+.prod-item.locked { opacity: 0.5; cursor: default; }
+.pi-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.pi-icon.blue { background: #EEF4FF; }
+.pi-icon.green { background: #EDFAF2; }
+.pi-icon.amber { background: #FFFBEB; }
+.pi-icon.purple { background: #F5F0FF; }
+.pi-icon.grey { background: #F5F7FB; }
+.pi-body { flex: 1; min-width: 0; }
+.pi-name { font-size: 14px; font-weight: 700; color: #1A2744; }
+.pi-sub { font-size: 12px; color: #7A8BA6; margin-top: 3px; }
+.pi-right { flex-shrink: 0; text-align: right; }
+.pi-val { font-size: 15px; font-weight: 800; color: #4B7CF3; }
+.pi-val.green { color: #16A34A; }
+.pi-val.lock { color: #94A3B8; font-size: 13px; font-weight: 600; }
+.pi-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 7px; margin-top: 4px; }
+.pb-active { background: #DCFCE7; color: #15803D; }
+.pb-new { background: #FEF9C3; color: #854D0E; }
+.pb-lock { background: #F1F5F9; color: #64748B; }
+.pb-soon { background: #F0F0FF; color: #6366F1; }
+
+/* ─── HISTORY SCREEN ─── */
+.hist-filter { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; scrollbar-width: none; }
+.hist-filter::-webkit-scrollbar { display: none; }
+.hf-chip { white-space: nowrap; padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; background: white; color: #7A8BA6; cursor: pointer; flex-shrink: 0; box-shadow: 0 1px 6px rgba(0,30,80,0.07); border: 1.5px solid transparent; }
+.hf-chip.on { background: #4B7CF3; color: white; border-color: #4B7CF3; }
+
+.txn-date { font-size: 11px; font-weight: 700; color: #7A8BA6; text-transform: uppercase; letter-spacing: 0.8px; padding: 12px 16px 8px; }
+.txn-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 16px;
+  background: white;
+  border-bottom: 0.5px solid #F0F5FF;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.txn-row:last-of-type { border-bottom: none; }
+.txn-row:active { background: #F8FBFF; }
+.txn-ico { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.txn-body { flex: 1; min-width: 0; }
+.txn-name { font-size: 14px; font-weight: 600; color: #1A2744; }
+.txn-sub { font-size: 12px; color: #7A8BA6; margin-top: 2px; }
+.txn-right { text-align: right; flex-shrink: 0; }
+.txn-amt { font-size: 15px; font-weight: 800; }
+.txn-amt.minus { color: #1A2744; }
+.txn-amt.plus { color: #16A34A; }
+.txn-time { font-size: 11px; color: #7A8BA6; margin-top: 2px; }
+
+/* ─── HELP SCREEN ─── */
+.chat-area { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-area::-webkit-scrollbar { display: none; }
+
+.msg { display: flex; flex-direction: column; gap: 3px; }
+.msg.out { align-items: flex-end; }
+.msg.in { align-items: flex-start; }
+.msg-bubble {
+  max-width: 78%; padding: 10px 14px;
+  border-radius: 18px; font-size: 13px; line-height: 1.45;
+}
+.msg.out .msg-bubble { background: #4B7CF3; color: white; border-bottom-right-radius: 5px; }
+.msg.in .msg-bubble { background: white; color: #1A2744; border-bottom-left-radius: 5px; box-shadow: 0 1px 6px rgba(0,30,80,0.08); }
+.msg-time { font-size: 10px; color: #7A8BA6; padding: 0 4px; }
+.msg-agent { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.msg-agent-ava { width: 26px; height: 26px; background: #4B7CF3; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.msg-agent-name { font-size: 11px; font-weight: 700; color: #4B7CF3; }
+
+.chat-input-bar {
+  background: white;
+  padding: 10px 14px 10px;
+  border-top: 0.5px solid #E8EFFA;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1; background: #F0F5FF; border: none; border-radius: 22px;
+  padding: 10px 16px; font-size: 14px; color: #1A2744;
+  outline: none; font-family: inherit;
+}
+.chat-input::placeholder { color: #9BACC4; }
+.chat-send {
+  width: 40px; height: 40px;
+  background: #4B7CF3; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(75,124,243,0.35);
+  border: none;
+}
+
+/* QUICK HELP */
+.help-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.hchip { background: #EEF4FF; color: #4B7CF3; border-radius: 12px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #C7D9FF; }
+
+/* PAGE HEADER (for inner screens) */
+.page-hdr {
+  background: white;
+  padding: 14px 20px;
+  border-bottom: 0.5px solid #E8EFFA;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.back-ico { font-size: 22px; color: #4B7CF3; cursor: pointer; }
+.page-hdr-title { font-size: 18px; font-weight: 800; color: #1A2744; flex: 1; }
+.page-hdr-right { font-size: 20px; cursor: pointer; }
+
+/* INVITE BIG BTN */
+.big-btn {
+  background: linear-gradient(135deg, #4B7CF3, #6396F8);
+  border-radius: 16px; padding: 16px;
+  text-align: center; cursor: pointer;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 20px rgba(75,124,243,0.3);
+  transition: transform 0.12s;
+}
+.big-btn:active { transform: scale(0.98); }
+.big-btn b { display: block; font-size: 15px; font-weight: 800; color: white; margin-bottom: 3px; }
+.big-btn span { font-size: 12px; color: rgba(255,255,255,0.75); }
+
+/* CIRCLE 2 */
+.circle2 {
+  background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+  border-radius: 16px; padding: 14px 16px;
+  border: 1px solid #FDE68A; margin-bottom: 10px;
+}
+.c2t { font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 6px; }
+.c2b { font-size: 12px; color: #78350F; line-height: 1.55; }
+.c2a { font-size: 20px; font-weight: 900; color: #D97706; }
+
+/* BANNER */
+.foot-banner {
+  background: linear-gradient(90deg, #4B7CF3, #6396F8);
+  padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; cursor: pointer;
+}
+.fb-text b { display: block; font-size: 12px; font-weight: 800; color: white; }
+.fb-text span { font-size: 10px; color: rgba(255,255,255,0.8); }
+.fb-arr { color: rgba(255,255,255,0.7); font-size: 16px; }
+
+/* BOTTOM NAV */
+.bnav {
+  background: white;
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 8px 0 16px; flex-shrink: 0;
+  border-top: 0.5px solid #E8EFFA;
+  box-shadow: 0 -4px 16px rgba(0,30,80,0.06);
+}
+.bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 10px; opacity: 0.35; transition: opacity 0.2s; }
+.bn.on { opacity: 1; }
+.bn .i { font-size: 22px; }
+.bn .l { font-size: 9px; font-weight: 600; color: #7A8BA6; }
+.bn.on .l { color: #4B7CF3; font-weight: 700; }
+
+.home-ind { background: white; display: flex; justify-content: center; align-items: center; padding: 5px 0 7px; flex-shrink: 0; }
+.home-bar { width: 130px; height: 5px; background: #1A1A1A; border-radius: 3px; opacity: 0.13; }
+
+/* POPUP */
+.popup-wrap { position: absolute; bottom: 175px; left: 16px; right: 16px; z-index: 50; animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes popIn { from { opacity: 0; transform: translateY(16px) scale(0.95); } to { opacity: 1; transform: none; } }
+.popup {
+  background: linear-gradient(135deg, #4B7CF3, #6396F8);
+  border-radius: 16px; padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  box-shadow: 0 12px 40px rgba(75,124,243,0.35);
+}
+.popup-ava { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.popup-body { flex: 1; min-width: 0; }
+.popup-title { font-size: 13px; font-weight: 800; color: white; margin-bottom: 3px; }
+.popup-sub { font-size: 11px; color: rgba(255,255,255,0.8); line-height: 1.4; }
+.popup-close { color: rgba(255,255,255,0.65); font-size: 20px; cursor: pointer; flex-shrink: 0; line-height: 1; padding-top: 1px; }
+
+.toast {
+  position: absolute; bottom: 130px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(26,39,68,0.9); color: white;
+  padding: 9px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  opacity: 0; transition: all 0.25s; z-index: 99;
+  white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.fade { opacity: 0; transform: translateY(8px); animation: fu .35s ease forwards; }
+@keyframes fu { to { opacity: 1; transform: none; } }
+
+/* ─── BOTTOM SHEETS ─── */
+.nbs-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 300; display: none; align-items: flex-end; }
+.nbs-overlay.open { display: flex; }
+.nbs-sheet { width: 100%; background: white; border-radius: 24px 24px 0 0; padding: 14px 20px 32px; animation: sheetUp .28s cubic-bezier(.4,0,.2,1); }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.nbs-handle { width: 36px; height: 4px; background: #E0E0E0; border-radius: 2px; margin: 0 auto 18px; }
+.nbs-sheet-title { font-size: 19px; font-weight: 800; color: #1A1A1A; margin-bottom: 18px; }
+.nbs-field { margin-bottom: 14px; }
+.nbs-label { font-size: 12px; color: #8E8E93; font-weight: 600; margin-bottom: 6px; }
+.nbs-input { width: 100%; border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 12px 14px; font-size: 16px; font-family: inherit; outline: none; color: #1A1A1A; background: #FAFAFA; }
+.nbs-input:focus { border-color: #4B7CF3; background: white; }
+.nbs-hint { font-size: 12px; color: #8E8E93; margin-top: 5px; }
+.nbs-presets { display: flex; gap: 8px; margin-bottom: 14px; }
+.nbs-preset { padding: 7px 14px; border-radius: 20px; background: #F0F5FF; color: #4B7CF3; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid #D6E4FF; white-space: nowrap; }
+.nbs-preset:active { background: #D6E4FF; }
+.nbs-submit { width: 100%; padding: 15px; background: linear-gradient(135deg, #4B7CF3, #6B9AF8); border: none; border-radius: 14px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 4px; }
+.nbs-submit:active { opacity: 0.85; }
+.pay-type-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.pay-type { padding: 7px 14px; border-radius: 20px; background: #F0F5FF; color: #4B7CF3; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #D6E4FF; }
+.pay-type.on { background: #4B7CF3; color: white; border-color: #4B7CF3; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- STATUS BAR -->
+  <div class="sb">
+    <span class="sb-t">12:32</span>
+    <div class="sb-r">
+      <div class="sb-sig">
+        <span style="height:4px"></span><span style="height:6px"></span>
+        <span style="height:9px"></span><span style="height:12px"></span>
+      </div>
+      <span style="font-size:12px">📶</span>
+      <div style="display:flex;align-items:center;gap:2px">
+        <div class="sb-bat-b"><div class="sb-bat-f"></div></div>
+        <div class="sb-bat-tip"></div>
+        <span class="sb-pct">7</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screens">
+
+    <!-- ══════════════════════════
+         ГЛАВНАЯ
+    ══════════════════════════ -->
+    <div class="screen active" id="s-home">
+      <div class="app-hdr">
+        <div class="hdr-top">
+          <div class="user-block">
+            <div class="user-ava">ИА</div>
+            <div class="user-info">
+              <div class="u-corp">🏢 Корпоративный клиент</div>
+              <div class="u-name">Иванов Алексей Сергеевич</div>
+            </div>
+          </div>
+          <div class="hdr-actions">
+            <div class="hbtn" onclick="toast('Настройки')">⚙️</div>
+            <div class="hbtn" onclick="toast('Уведомления')">🔔<div class="hbtn-dot"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bal-section">
+        <div class="bal-label">Текущий счёт · ···· 5978</div>
+        <div class="bal-row">
+          <div class="bal-amount">425 800 ₽</div>
+          <div class="invite-chip" onclick="goTab('ref')">🎁 Пригласить</div>
+        </div>
+        <div class="bal-acc">АО Банк НБС · Рублёвый счёт</div>
+      </div>
+
+      <div class="scroll"><div class="pad">
+
+        <!-- QUICK ACTIONS -->
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px" class="fade" style="animation-delay:.04s">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" onclick="openSheet('sheetFill')">
+            <div style="width:52px;height:52px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 10px rgba(0,30,80,0.08)">💳</div>
+            <span style="font-size:11px;color:#7A8BA6;font-weight:500">Пополнить</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" onclick="openSheet('sheetSend')">
+            <div style="width:52px;height:52px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 10px rgba(0,30,80,0.08)">↗️</div>
+            <span style="font-size:11px;color:#7A8BA6;font-weight:500">Перевести</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" onclick="openSheet('sheetPay')">
+            <div style="width:52px;height:52px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 10px rgba(0,30,80,0.08)">📱</div>
+            <span style="font-size:11px;color:#7A8BA6;font-weight:500">Оплатить</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" onclick="goTab('prod')">
+            <div style="width:52px;height:52px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 10px rgba(0,30,80,0.08)">•••</div>
+            <span style="font-size:11px;color:#7A8BA6;font-weight:500">Продукты</span>
+          </div>
+        </div>
+
+        <!-- REFERRAL PROGRESS CARD -->
+        <div class="prog-card fade" onclick="goTab('ref')">
+          <div class="pc-header">
+            <div class="pc-counter">615 <span>/ 1000</span></div>
+            <div class="pc-btn">Пригласить →</div>
+          </div>
+          <div class="pc-sub">Осталось 385 активных клиентов</div>
+          <div class="pc-prize-row">
+            <div class="pc-prize-name">Консьерж-сервис</div>
+            <div class="pc-prize-dots">···</div>
+          </div>
+          <div class="pc-bar"><div class="pc-fill" id="pcFill1"></div></div>
+          <div class="pc-range"><span>500</span><span>1000</span></div>
+        </div>
+
+        <!-- MY CODE -->
+        <div class="wc fade">
+          <div style="font-size:13px;font-weight:700;color:#1A2744;margin-bottom:10px">Мой реферальный код</div>
+          <div class="code-block" onclick="toast('Код скопирован: ZQ8321')">
+            <span style="font-size:14px">🔑</span>
+            <div class="code-val">ZQ8321</div>
+            <div class="code-copy">Копировать</div>
+          </div>
+          <div class="share-row">
+            <div class="share-btn sh-wa" onclick="toast('WhatsApp')">WhatsApp</div>
+            <div class="share-btn sh-tg" onclick="toast('Telegram')">Telegram</div>
+            <div class="share-btn sh-lnk" onclick="toast('Ссылка скопирована')">Ссылка</div>
+          </div>
+        </div>
+
+        <!-- PRODUCTS PREVIEW -->
+        <div class="wc fade">
+          <div class="wc-title">Мои продукты <span class="wc-link" onclick="goTab('prod')">Все →</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F0F5FF;cursor:pointer" onclick="goTab('prod')">
+            <div style="width:42px;height:42px;background:#EEF4FF;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">🏦</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#1A2744">Вклад «Накопительный»</div>
+              <div style="font-size:12px;color:#7A8BA6;margin-top:2px">до 3 000 000 ₽</div>
+            </div>
+            <div style="font-size:15px;font-weight:800;color:#4B7CF3">6.2%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer" onclick="goTab('prod')">
+            <div style="width:42px;height:42px;background:#EDFAF2;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">💼</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#1A2744">Расчётный счёт</div>
+              <div style="font-size:12px;color:#7A8BA6;margin-top:2px">ИП Иванов А.С.</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#16A34A">Активен</div>
+          </div>
+        </div>
+
+      </div></div>
+
+      <!-- POPUP -->
+      <div class="popup-wrap" id="popup">
+        <div class="popup">
+          <div class="popup-ava">🎩</div>
+          <div class="popup-body">
+            <div class="popup-title">Открытие привилегии: Консьерж-сервис</div>
+            <div class="popup-sub">Осталось <b style="color:#FDE68A">385 клиентов</b> до общей цели. Пригласи — ускорим вместе!</div>
+          </div>
+          <div class="popup-close" onclick="dismissPopup()">×</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+         РЕФЕРАЛЬНАЯ
+    ══════════════════════════ -->
+    <div class="screen" id="s-ref">
+      <div class="page-hdr">
+        <div class="page-hdr-title">НБС Привилегия</div>
+        <div class="page-hdr-right" onclick="toast('Поделиться')">⬆</div>
+      </div>
+
+      <div class="scroll"><div class="pad">
+
+        <!-- PERSONAL HERO -->
+        <div class="pers-hero fade">
+          <div class="ph-top">
+            <div>
+              <div class="ph-count-label">Мой прогресс</div>
+              <div class="ph-count"><span class="ph-n">6</span><span class="ph-of">/ 15</span></div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px">привлечённых клиентов</div>
+            </div>
+            <div class="ph-earn">
+              <div class="ph-earn-label">Заработано</div>
+              <div class="ph-earn-val">+360 000 ₽</div>
+            </div>
+          </div>
+          <div class="ph-bar"><div class="ph-fill" id="phFill"></div></div>
+          <div class="ph-hint">Текущий уровень: <b>6–15 человек → 70 000 ₽</b> за каждого. Ещё 9 — закроешь уровень.</div>
+        </div>
+
+        <!-- BANK PROGRESS -->
+        <div class="wc fade">
+          <div style="font-size:11px;font-weight:700;color:#7A8BA6;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Общий прогресс банка</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:22px;font-weight:900;color:#1A2744">615 <span style="font-size:13px;color:#7A8BA6;font-weight:600">/ 1000</span></div>
+            <div style="font-size:12px;color:#4B7CF3;font-weight:700">Осталось 385</div>
+          </div>
+          <div style="height:8px;background:#EEF4FF;border-radius:4px;overflow:hidden;margin-bottom:10px">
+            <div id="bankBar" style="height:100%;background:linear-gradient(90deg,#4B7CF3,#6396F8);border-radius:4px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div>
+          </div>
+          <div style="background:#EEF4FF;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px">
+            <div style="font-size:28px">🎩</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#1A2744">Консьерж-сервис на 3 месяца</div>
+              <div style="font-size:11px;color:#7A8BA6;margin-top:3px">При 1000 активных клиентах — для всех участников</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEVELS -->
+        <div class="wc fade">
+          <div class="wc-title">Уровни вознаграждения</div>
+          <div class="lvl-row">
+            <div class="lvl-ico done">✅</div>
+            <div class="lvl-info">
+              <div class="lvl-name-row"><span class="lvl-name">1–2 клиента</span><span class="lvl-tag lt-done">Выполнено</span></div>
+              <div class="lvl-sub">2 из 2 привлечено</div>
+            </div>
+            <div class="lvl-right"><div class="lvl-amt">50 000 ₽</div><div class="lvl-per">за каждого</div></div>
+          </div>
+          <div class="lvl-row">
+            <div class="lvl-ico done">✅</div>
+            <div class="lvl-info">
+              <div class="lvl-name-row"><span class="lvl-name">3–5 клиентов</span><span class="lvl-tag lt-done">Выполнено</span></div>
+              <div class="lvl-sub">5 из 5 привлечено</div>
+            </div>
+            <div class="lvl-right"><div class="lvl-amt">60 000 ₽</div><div class="lvl-per">за каждого</div></div>
+          </div>
+          <div class="lvl-row" style="background:#F0F6FF;border-radius:12px;padding:12px;margin:2px -2px">
+            <div class="lvl-ico now">🔵</div>
+            <div class="lvl-info" style="min-width:0">
+              <div class="lvl-name-row"><span class="lvl-name">6–15 клиентов</span><span class="lvl-tag lt-now">Сейчас</span></div>
+              <div class="lvl-sub">6 из 15 привлечено</div>
+              <div class="lvl-mini-bar"><div class="lvl-mini-fill" style="width:40%"></div></div>
+            </div>
+            <div class="lvl-right"><div class="lvl-amt blue">70 000 ₽</div><div class="lvl-per">за каждого</div></div>
+          </div>
+          <div class="lvl-row" style="opacity:.45">
+            <div class="lvl-ico lock">🔒</div>
+            <div class="lvl-info"><div class="lvl-name-row"><span class="lvl-name">16+ клиентов</span></div><div class="lvl-sub">Заблокирован</div></div>
+            <div class="lvl-right"><div class="lvl-amt">80 000 ₽</div><div class="lvl-per">за каждого</div></div>
+          </div>
+        </div>
+
+        <!-- 2ND CIRCLE -->
+        <div class="circle2 fade">
+          <div class="c2t">🌟 Доход второго круга</div>
+          <div class="c2b">За активных клиентов, которых привели ваши рефералы — <span class="c2a">+10 000 ₽</span> за каждого (в рамках лимитов).<br><br>Уже получено: <b style="color:#D97706">75 000 ₽</b> за клиентов второго круга.</div>
+        </div>
+
+        <!-- FRIENDS -->
+        <div class="wc fade">
+          <div class="wc-title">Мои рефералы <span class="wc-link" onclick="toast('Все рефералы')">Все →</span></div>
+          <div class="fr-row"><div class="fr-ava">👤</div><div class="fr-info"><div class="fr-name">Михаил К.</div><div class="fr-st ok">✓ Счёт открыт · Активация выполнена</div></div><div class="fr-rew">+70 000 ₽</div></div>
+          <div class="fr-row"><div class="fr-ava">👤</div><div class="fr-info"><div class="fr-name">Ольга П.</div><div class="fr-st ok">✓ Счёт открыт · Активация выполнена</div></div><div class="fr-rew">+70 000 ₽</div></div>
+          <div class="fr-row"><div class="fr-ava">👤</div><div class="fr-info"><div class="fr-name">Дмитрий В.</div><div class="fr-st wait">⏳ Счёт открыт · Ожидает пополнения</div></div><div class="fr-rew" style="color:#D97706">В процессе</div></div>
+          <div class="fr-row"><div class="fr-ava">👤</div><div class="fr-info"><div class="fr-name">Наталья С.</div><div class="fr-st new">🔵 Подала заявку</div></div><div class="fr-rew" style="color:#94A3B8">Ждём</div></div>
+        </div>
+
+        <!-- INVITE BTN -->
+        <div class="big-btn fade" onclick="toast('Ссылка скопирована!')">
+          <b>🎁 Пригласить друга</b>
+          <span>До 70 000 ₽ за каждого нового клиента</span>
+        </div>
+
+      </div></div>
+    </div>
+
+    <!-- ══════════════════════════
+         ПРОДУКТЫ
+    ══════════════════════════ -->
+    <div class="screen" id="s-prod">
+      <div class="page-hdr">
+        <div class="page-hdr-title">Продукты</div>
+        <div class="page-hdr-right" onclick="toast('Фильтр')">⚙️</div>
+      </div>
+      <div class="scroll"><div class="pad">
+
+        <div class="wc fade">
+          <div class="wc-section">Доступны вам</div>
+
+          <div class="prod-item" onclick="toast('Текущий счёт')">
+            <div class="pi-icon blue">🏦</div>
+            <div class="pi-body"><div class="pi-name">Текущий счёт</div><div class="pi-sub">Рублёвый · ···· 5978</div></div>
+            <div class="pi-right"><div class="pi-val green">Активен</div><div class="pi-badge pb-active">Подключён</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Расчётный счёт')">
+            <div class="pi-icon green">💼</div>
+            <div class="pi-body"><div class="pi-name">Расчётный счёт</div><div class="pi-sub">ИП Иванов А.С. · корпоративный</div></div>
+            <div class="pi-right"><div class="pi-val green">Активен</div><div class="pi-badge pb-active">Подключён</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Вклад Накопительный')">
+            <div class="pi-icon blue">📈</div>
+            <div class="pi-body"><div class="pi-name">Вклад «Накопительный»</div><div class="pi-sub">до 3 000 000 ₽ · от 90 дней</div></div>
+            <div class="pi-right"><div class="pi-val">6.2%</div><div class="pi-badge pb-active">Активен</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Корпоративная карта')">
+            <div class="pi-icon purple">💳</div>
+            <div class="pi-body"><div class="pi-name">Корпоративная карта</div><div class="pi-sub">Visa Business · лимит 500 000 ₽</div></div>
+            <div class="pi-right"><div class="pi-val green">Активна</div><div class="pi-badge pb-active">Подключёна</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Переводы внутри банка')">
+            <div class="pi-icon green">↔️</div>
+            <div class="pi-body"><div class="pi-name">Переводы внутри банка</div><div class="pi-sub">Мгновенно · без комиссии</div></div>
+            <div class="pi-right"><div class="pi-val green">Доступно</div><div class="pi-badge pb-active">Активно</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Валютный контроль')">
+            <div class="pi-icon amber">🔍</div>
+            <div class="pi-body"><div class="pi-name">Валютный контроль</div><div class="pi-sub">Сопровождение ВЭД-операций</div></div>
+            <div class="pi-right"><div class="pi-val green">Активен</div><div class="pi-badge pb-active">Подключён</div></div>
+          </div>
+        </div>
+
+        <div class="wc fade">
+          <div class="wc-section">Можно подключить</div>
+
+          <div class="prod-item" onclick="toast('Овердрафт — оставить заявку?')">
+            <div class="pi-icon blue">💰</div>
+            <div class="pi-body"><div class="pi-name">Овердрафт</div><div class="pi-sub">До 30% от оборота по счёту</div></div>
+            <div class="pi-right"><div class="pi-val">от 12%</div><div class="pi-badge pb-new">Подключить</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Инвестиционный счёт — оставить заявку?')">
+            <div class="pi-icon purple">📊</div>
+            <div class="pi-body"><div class="pi-name">Инвестиционный счёт</div><div class="pi-sub">ОФЗ, облигации, фонды</div></div>
+            <div class="pi-right"><div class="pi-val">до 14%</div><div class="pi-badge pb-new">Подключить</div></div>
+          </div>
+
+          <div class="prod-item" onclick="toast('Зарплатный проект — оставить заявку?')">
+            <div class="pi-icon green">👥</div>
+            <div class="pi-body"><div class="pi-name">Зарплатный проект</div><div class="pi-sub">Выплаты сотрудникам через НБС</div></div>
+            <div class="pi-right"><div class="pi-val">0 ₽</div><div class="pi-badge pb-new">Подключить</div></div>
+          </div>
+        </div>
+
+        <div class="wc fade">
+          <div class="wc-section">Недоступно / В разработке</div>
+
+          <div class="prod-item locked">
+            <div class="pi-icon grey">🌙</div>
+            <div class="pi-body"><div class="pi-name">Ночные переводы за рубеж</div><div class="pi-sub">SWIFT/SEPA · 00:00–06:00</div></div>
+            <div class="pi-right"><div class="pi-val lock">Недоступно</div><div class="pi-badge pb-soon">Скоро</div></div>
+          </div>
+
+          <div class="prod-item locked">
+            <div class="pi-icon grey">🌍</div>
+            <div class="pi-body"><div class="pi-name">Международные SWIFT</div><div class="pi-sub">Переводы в недружественные страны</div></div>
+            <div class="pi-right"><div class="pi-val lock">Ограничено</div><div class="pi-badge pb-lock">ЦБ РФ</div></div>
+          </div>
+
+          <div class="prod-item locked">
+            <div class="pi-icon grey">🤖</div>
+            <div class="pi-body"><div class="pi-name">Автоплатежи по шаблону</div><div class="pi-sub">Запуск запланирован на Q2 2026</div></div>
+            <div class="pi-right"><div class="pi-val lock">В разработке</div><div class="pi-badge pb-soon">Q2 2026</div></div>
+          </div>
+        </div>
+
+      </div></div>
+    </div>
+
+    <!-- ══════════════════════════
+         ИСТОРИЯ
+    ══════════════════════════ -->
+    <div class="screen" id="s-hist">
+      <div class="page-hdr">
+        <div class="page-hdr-title">История</div>
+        <div class="page-hdr-right" onclick="toast('Фильтр')">⚙️</div>
+      </div>
+
+      <div class="hist-filter">
+        <div class="hf-chip on" onclick="filterTxn(this)">Все</div>
+        <div class="hf-chip" onclick="filterTxn(this)">Поступления</div>
+        <div class="hf-chip" onclick="filterTxn(this)">Расходы</div>
+        <div class="hf-chip" onclick="filterTxn(this)">Переводы</div>
+        <div class="hf-chip" onclick="filterTxn(this)">Вклад</div>
+      </div>
+
+      <div class="scroll">
+        <div class="txn-date">Сегодня, 26 февраля</div>
+        <div class="txn-row" onclick="toast('Пополнение счёта')">
+          <div class="txn-ico" style="background:#EDFAF2">📥</div>
+          <div class="txn-body"><div class="txn-name">Пополнение счёта</div><div class="txn-sub">Перевод · ПАО Сбербанк</div></div>
+          <div class="txn-right"><div class="txn-amt plus">+120 000 ₽</div><div class="txn-time">14:32</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Оплата аренды')">
+          <div class="txn-ico" style="background:#F0F5FF">🏢</div>
+          <div class="txn-body"><div class="txn-name">Аренда офиса</div><div class="txn-sub">ООО «СитиПлаза» · счёт №2847</div></div>
+          <div class="txn-right"><div class="txn-amt minus">−85 000 ₽</div><div class="txn-time">11:15</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Реферальное вознаграждение')">
+          <div class="txn-ico" style="background:#FEF9C3">🎁</div>
+          <div class="txn-body"><div class="txn-name">Реферальное вознаграждение</div><div class="txn-sub">НБС Привилегия · Михаил К.</div></div>
+          <div class="txn-right"><div class="txn-amt plus">+70 000 ₽</div><div class="txn-time">09:40</div></div>
+        </div>
+
+        <div class="txn-date">Вчера, 25 февраля</div>
+        <div class="txn-row" onclick="toast('Зарплата сотрудникам')">
+          <div class="txn-ico" style="background:#F5F0FF">👥</div>
+          <div class="txn-body"><div class="txn-name">Зарплата сотрудникам</div><div class="txn-sub">Ведомость №12-02 · 8 человек</div></div>
+          <div class="txn-right"><div class="txn-amt minus">−312 000 ₽</div><div class="txn-time">18:00</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Поступление от клиента')">
+          <div class="txn-ico" style="background:#EDFAF2">📥</div>
+          <div class="txn-body"><div class="txn-name">Оплата от клиента</div><div class="txn-sub">ООО «Альфа-Трейд» · счёт №3311</div></div>
+          <div class="txn-right"><div class="txn-amt plus">+540 000 ₽</div><div class="txn-time">14:22</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Налоговые отчисления')">
+          <div class="txn-ico" style="background:#FFF7ED">🧾</div>
+          <div class="txn-body"><div class="txn-name">Налоговые отчисления</div><div class="txn-sub">ФНС России · НДС Q1</div></div>
+          <div class="txn-right"><div class="txn-amt minus">−93 400 ₽</div><div class="txn-time">10:00</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Проценты по вкладу')">
+          <div class="txn-ico" style="background:#EEF4FF">📈</div>
+          <div class="txn-body"><div class="txn-name">Проценты по вкладу</div><div class="txn-sub">Накопительный · январь</div></div>
+          <div class="txn-right"><div class="txn-amt plus">+15 500 ₽</div><div class="txn-time">08:01</div></div>
+        </div>
+
+        <div class="txn-date">24 февраля</div>
+        <div class="txn-row" onclick="toast('Реферальное вознаграждение')">
+          <div class="txn-ico" style="background:#FEF9C3">🎁</div>
+          <div class="txn-body"><div class="txn-name">Реферальное вознаграждение</div><div class="txn-sub">НБС Привилегия · Ольга П.</div></div>
+          <div class="txn-right"><div class="txn-amt plus">+70 000 ₽</div><div class="txn-time">16:44</div></div>
+        </div>
+        <div class="txn-row" onclick="toast('Коммунальные услуги')">
+          <div class="txn-ico" style="background:#F0F5FF">💡</div>
+          <div class="txn-body"><div class="txn-name">Коммунальные услуги</div><div class="txn-sub">Электроэнергия · Мосэнерго</div></div>
+          <div class="txn-right"><div class="txn-amt minus">−18 200 ₽</div><div class="txn-time">12:30</div></div>
+        </div>
+        <div style="height:12px"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+         ПОМОЩЬ
+    ══════════════════════════ -->
+    <div class="screen" id="s-help">
+      <div class="page-hdr">
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+          <div style="width:36px;height:36px;background:#4B7CF3;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🎩</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#1A2744">Поддержка НБС</div>
+            <div style="font-size:11px;color:#16A34A;font-weight:600">● Онлайн · отвечает за 2 мин</div>
+          </div>
+        </div>
+        <div class="page-hdr-right" onclick="toast('Позвонить в банк')">📞</div>
+      </div>
+
+      <div class="chat-area" id="chatArea">
+        <!-- Agent message -->
+        <div class="msg in">
+          <div class="msg-agent">
+            <div class="msg-agent-ava">🎩</div>
+            <div class="msg-agent-name">Александра · НБС</div>
+          </div>
+          <div class="msg-bubble">Добрый день, Алексей Сергеевич! Я ваш персональный менеджер по поддержке. Чем могу помочь? 😊</div>
+          <div class="msg-time">12:18</div>
+        </div>
+        <div class="msg in">
+          <div class="msg-bubble">Вы можете задать вопрос по счёту, реферальной программе, продуктам банка или оставить обращение.</div>
+          <div class="msg-time">12:18</div>
+        </div>
+
+        <!-- Quick chips -->
+        <div class="help-chips">
+          <div class="hchip" onclick="sendQuick('Статус реферальных выплат')">💰 Выплаты</div>
+          <div class="hchip" onclick="sendQuick('Подключить овердрафт')">📋 Овердрафт</div>
+          <div class="hchip" onclick="sendQuick('Реквизиты счёта')">🏦 Реквизиты</div>
+          <div class="hchip" onclick="sendQuick('Связаться с менеджером')">👤 Менеджер</div>
+        </div>
+
+        <!-- User message -->
+        <div class="msg out">
+          <div class="msg-bubble">Добрый день! Хочу узнать статус по реферальной выплате за Дмитрия В.</div>
+          <div class="msg-time">12:22</div>
+        </div>
+        <div class="msg in">
+          <div class="msg-agent">
+            <div class="msg-agent-ava">🎩</div>
+            <div class="msg-agent-name">Александра · НБС</div>
+          </div>
+          <div class="msg-bubble">Вижу заявку. Дмитрий В. открыл счёт 24 февраля ✅<br><br>Ожидается квалифицирующее действие — пополнение счёта на сумму от 5 000 000 ₽. После подтверждения выплата 70 000 ₽ поступит в течение 3 рабочих дней.</div>
+          <div class="msg-time">12:23</div>
+        </div>
+        <div class="msg out">
+          <div class="msg-bubble">Спасибо! А как он может это сделать быстрее?</div>
+          <div class="msg-time">12:24</div>
+        </div>
+        <div class="msg in">
+          <div class="msg-bubble">Поделитесь с Дмитрием инструкцией: открыть приложение НБС → Пополнить счёт → перевести средства. Также можно прийти в отделение — сотрудник поможет на месте 🏦</div>
+          <div class="msg-time">12:24</div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <input class="chat-input" id="chatInput" placeholder="Написать сообщение..." />
+        <button class="chat-send" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+
+  </div><!-- end screens -->
+
+  <!-- FOOTER BANNER -->
+  <div class="foot-banner" onclick="goTab('ref')">
+    <div class="fb-text">
+      <b>НБС Привилегия · 615 / 1000 клиентов</b>
+      <span>Консьерж-сервис открывается при достижении цели →</span>
+    </div>
+    <div class="fb-arr">›</div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav" id="bnav">
+    <div class="bn on" data-screen="home" onclick="goTab('home')">
+      <div class="i">🏠</div><div class="l">Главная</div>
+    </div>
+    <div class="bn" data-screen="ref" onclick="goTab('ref')">
+      <div class="i">🏆</div><div class="l">Реферальная</div>
+    </div>
+    <div class="bn" data-screen="prod" onclick="goTab('prod')">
+      <div class="i">💼</div><div class="l">Продукты</div>
+    </div>
+    <div class="bn" data-screen="hist" onclick="goTab('hist')">
+      <div class="i">🕐</div><div class="l">История</div>
+    </div>
+    <div class="bn" data-screen="help" onclick="goTab('help')">
+      <div class="i">💬</div><div class="l">Помощь</div>
+    </div>
+  </div>
+
+  <div class="home-ind"><div class="home-bar"></div></div>
+  <div class="toast" id="toastEl"></div>
+
+  <!-- SHEET: ПОПОЛНИТЬ -->
+  <div class="nbs-overlay" id="sheetFill" onclick="closeSheet('sheetFill')">
+    <div class="nbs-sheet" onclick="event.stopPropagation()">
+      <div class="nbs-handle"></div>
+      <div class="nbs-sheet-title">💳 Пополнить счёт</div>
+      <div class="nbs-field">
+        <div class="nbs-label">Откуда списать</div>
+        <input class="nbs-input" value="Карта Сбербанк · **** 4276" readonly />
+      </div>
+      <div class="nbs-field">
+        <div class="nbs-label">Сумма пополнения</div>
+        <input class="nbs-input" id="fillAmt" placeholder="0 ₽" type="number" />
+        <div class="nbs-hint">Доступно на карте: 47 200 ₽</div>
+      </div>
+      <div class="nbs-presets">
+        <div class="nbs-preset" onclick="setAmt('fillAmt','10000')">10 000</div>
+        <div class="nbs-preset" onclick="setAmt('fillAmt','25000')">25 000</div>
+        <div class="nbs-preset" onclick="setAmt('fillAmt','50000')">50 000</div>
+        <div class="nbs-preset" onclick="setAmt('fillAmt','100000')">100 000</div>
+      </div>
+      <button class="nbs-submit" onclick="confirmSheet('sheetFill','✅ Счёт пополнен')">Пополнить →</button>
+    </div>
+  </div>
+
+  <!-- SHEET: ПЕРЕВЕСТИ -->
+  <div class="nbs-overlay" id="sheetSend" onclick="closeSheet('sheetSend')">
+    <div class="nbs-sheet" onclick="event.stopPropagation()">
+      <div class="nbs-handle"></div>
+      <div class="nbs-sheet-title">↗ Перевести</div>
+      <div class="nbs-field">
+        <div class="nbs-label">Получатель (счёт или ИНН)</div>
+        <input class="nbs-input" placeholder="40702810... или ИНН" />
+      </div>
+      <div class="nbs-field">
+        <div class="nbs-label">Сумма</div>
+        <input class="nbs-input" id="sendAmt" placeholder="0 ₽" type="number" />
+        <div class="nbs-hint">Баланс: 425 800 ₽</div>
+      </div>
+      <div class="nbs-presets">
+        <div class="nbs-preset" onclick="setAmt('sendAmt','5000')">5 000</div>
+        <div class="nbs-preset" onclick="setAmt('sendAmt','15000')">15 000</div>
+        <div class="nbs-preset" onclick="setAmt('sendAmt','30000')">30 000</div>
+      </div>
+      <div class="nbs-field">
+        <div class="nbs-label">Назначение платежа</div>
+        <input class="nbs-input" placeholder="Оплата по договору №..." />
+      </div>
+      <button class="nbs-submit" onclick="confirmSheet('sheetSend','✅ Перевод выполнен')">Перевести →</button>
+    </div>
+  </div>
+
+  <!-- SHEET: ОПЛАТИТЬ -->
+  <div class="nbs-overlay" id="sheetPay" onclick="closeSheet('sheetPay')">
+    <div class="nbs-sheet" onclick="event.stopPropagation()">
+      <div class="nbs-handle"></div>
+      <div class="nbs-sheet-title">📋 Оплатить</div>
+      <div class="pay-type-row">
+        <div class="pay-type on" onclick="payType(this)">По счёту</div>
+        <div class="pay-type" onclick="payType(this)">По QR</div>
+        <div class="pay-type" onclick="payType(this)">По реквизитам</div>
+      </div>
+      <div class="nbs-field">
+        <div class="nbs-label">Получатель</div>
+        <input class="nbs-input" placeholder="ООО / ИП / ИНН..." />
+      </div>
+      <div class="nbs-field">
+        <div class="nbs-label">Сумма</div>
+        <input class="nbs-input" id="payAmt" placeholder="0 ₽" type="number" />
+        <div class="nbs-hint">Баланс: 425 800 ₽</div>
+      </div>
+      <div class="nbs-presets">
+        <div class="nbs-preset" onclick="setAmt('payAmt','10000')">10 000</div>
+        <div class="nbs-preset" onclick="setAmt('payAmt','50000')">50 000</div>
+        <div class="nbs-preset" onclick="setAmt('payAmt','100000')">100 000</div>
+      </div>
+      <button class="nbs-submit" onclick="confirmSheet('sheetPay','✅ Платёж отправлен')">Оплатить →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const screens = { home:'s-home', ref:'s-ref', prod:'s-prod', hist:'s-hist', help:'s-help' };
+
+  function goTab(key) {
+    Object.values(screens).forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById(screens[key]).classList.add('active');
+    document.querySelectorAll('.bn').forEach(b => {
+      b.classList.toggle('on', b.dataset.screen === key);
+    });
+    if (key === 'ref') animateRefBars();
+  }
+
+  function animateRefBars() {
+    setTimeout(() => {
+      const bb = document.getElementById('bankBar');
+      const ph = document.getElementById('phFill');
+      if (bb) bb.style.width = '61.5%';
+      if (ph) ph.style.width = '40%';
+    }, 150);
+  }
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const f1 = document.getElementById('pcFill1');
+      if (f1) f1.style.width = '61.5%';
+    }, 400);
+    setTimeout(dismissPopup, 5000);
+  });
+
+  function dismissPopup() {
+    const p = document.getElementById('popup');
+    if (!p) return;
+    p.style.transition = 'opacity .3s, transform .3s';
+    p.style.opacity = '0';
+    p.style.transform = 'translateY(12px)';
+    setTimeout(() => p.remove(), 300);
+  }
+
+  function filterTxn(el) {
+    document.querySelectorAll('.hf-chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    toast(el.textContent.trim());
+  }
+
+  function sendQuick(text) {
+    addUserMsg(text);
+    setTimeout(() => addAgentMsg('Принято! Передаю вашу заявку в профильный отдел. Ответ поступит в течение 15 минут.'), 900);
+  }
+
+  function sendMsg() {
+    const inp = document.getElementById('chatInput');
+    const text = inp.value.trim();
+    if (!text) return;
+    addUserMsg(text);
+    inp.value = '';
+    setTimeout(() => addAgentMsg('Спасибо за сообщение! Изучу вопрос и отвечу в ближайшее время.'), 1000);
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMsg();
+  });
+
+  function addUserMsg(text) {
+    const area = document.getElementById('chatArea');
+    const now = new Date().toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'});
+    area.insertAdjacentHTML('beforeend', `
+      <div class="msg out">
+        <div class="msg-bubble">${text}</div>
+        <div class="msg-time">${now}</div>
+      </div>`);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function addAgentMsg(text) {
+    const area = document.getElementById('chatArea');
+    const now = new Date().toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'});
+    area.insertAdjacentHTML('beforeend', `
+      <div class="msg in">
+        <div class="msg-agent"><div class="msg-agent-ava">🎩</div><div class="msg-agent-name">Александра · НБС</div></div>
+        <div class="msg-bubble">${text}</div>
+        <div class="msg-time">${now}</div>
+      </div>`);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toastEl');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ─── BOTTOM SHEETS ───
+  function openSheet(id) { document.getElementById(id).classList.add('open'); }
+  function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+  function setAmt(inputId, val) { document.getElementById(inputId).value = val; }
+  function confirmSheet(sheetId, msg) { closeSheet(sheetId); toast(msg); }
+  function payType(el) {
+    el.closest('.pay-type-row').querySelectorAll('.pay-type').forEach(b => b.classList.remove('on'));
+    el.classList.add('on');
+  }
+</script>
+</body>
+</html>

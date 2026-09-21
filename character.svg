@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Body -->
+  <rect x="35" y="45" width="50" height="55" rx="12" fill="#6366f1"/>
+  <!-- Head -->
+  <circle cx="60" cy="32" r="22" fill="#fbbf24"/>
+  <!-- Eyes -->
+  <circle cx="52" cy="29" r="3" fill="#1e1b4b"/>
+  <circle cx="68" cy="29" r="3" fill="#1e1b4b"/>
+  <!-- Eye shine -->
+  <circle cx="53" cy="28" r="1" fill="white"/>
+  <circle cx="69" cy="28" r="1" fill="white"/>
+  <!-- Smile -->
+  <path d="M52 37 Q60 44 68 37" stroke="#1e1b4b" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Arms -->
+  <rect x="22" y="52" width="15" height="8" rx="4" fill="#6366f1"/>
+  <rect x="83" y="52" width="15" height="8" rx="4" fill="#6366f1"/>
+  <!-- Feet -->
+  <rect x="40" y="95" width="14" height="10" rx="5" fill="#4f46e5"/>
+  <rect x="66" y="95" width="14" height="10" rx="5" fill="#4f46e5"/>
+  <!-- Antenna -->
+  <line x1="60" y1="10" x2="60" y2="4" stroke="#6366f1" stroke-width="2"/>
+  <circle cx="60" cy="3" r="3" fill="#a78bfa"/>
+</svg>

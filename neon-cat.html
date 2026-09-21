@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Neon Cat Classic</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    touch-action: none;
+    cursor: none;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Responsive size
+const W = Math.min(window.innerWidth, 520);
+const H = Math.min(window.innerHeight, 700);
+canvas.width = W;
+canvas.height = H;
+
+// ─── Pixel cat sprite (12×10) ────────────────────────────────────────────────
+// B=body, E=eye, N=nose, T=tail, .=empty
+const CAT = [
+  '..BBBBBBBB..',
+  '.BBBBBBBBBB.',
+  'BBBBBBBBBBBB',
+  'B.BB.BB.BB.B',  // ears suggestion
+  'BBBBBBBBBBBB',
+  'BBEBBBBBEBBBB'.slice(0,12),
+  'BBBBBNNBBBBB'.slice(0,12),
+  'BBBBBBBBBBBB',
+  '.BBBBBBBBBB.',
+  '..BBBBBBBB..',
+];
+
+const RAINBOW = ['#ff0055','#ff5500','#ffee00','#00ee44','#00bbff','#cc00ff'];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let state = 'start';
+let frame = 0;
+let score = 0;
+let hiScore = 0;
+let speed = 3;
+
+// Cat: lerps towards cursor
+let cat = { x: W * 0.25, y: H * 0.5, tx: W * 0.25, ty: H * 0.5, size: 38 };
+
+// Trail: stores last N positions
+let trail = [];
+const TRAIL_LEN = 40;
+
+// Obstacles: vertical walls with a hole
+let obstacles = [];
+
+// Stars parallax layers
+let stars = Array.from({ length: 100 }, () => ({
+  x: Math.random() * W, y: Math.random() * H,
+  r: Math.random() * 1.4 + 0.3,
+  spd: Math.random() * 0.8 + 0.15,
+  bright: Math.random(),
+}));
+
+// Particles on death
+let particles = [];
+
+// Collectible sparks (bonus score)
+let sparks = [];
+
+// ─── Input: mouse & touch ─────────────────────────────────────────────────────
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  if (e.touches) {
+    return {
+      x: (e.touches[0].clientX - rect.left) * scaleX,
+      y: (e.touches[0].clientY - rect.top) * scaleY,
+    };
+  }
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY,
+  };
+}
+
+canvas.addEventListener('mousemove', e => {
+  if (state === 'dead') return;
+  const p = getPos(e);
+  cat.tx = p.x;
+  cat.ty = p.y;
+  if (state === 'start') state = 'play';
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (state === 'dead') return;
+  const p = getPos(e);
+  cat.tx = p.x;
+  cat.ty = p.y;
+  if (state === 'start') state = 'play';
+}, { passive: false });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const p = getPos(e);
+  cat.tx = p.x;
+  cat.ty = p.y;
+  if (state === 'start') { state = 'play'; }
+  else if (state === 'dead') { restart(); }
+}, { passive: false });
+
+canvas.addEventListener('click', () => {
+  if (state === 'dead') restart();
+  if (state === 'start') state = 'play';
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function glow(color, blur) { ctx.shadowColor = color; ctx.shadowBlur = blur; }
+function noGlow() { ctx.shadowBlur = 0; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function restart() {
+  cat = { x: W * 0.25, y: H * 0.5, tx: W * 0.25, ty: H * 0.5, size: 38 };
+  obstacles = [];
+  sparks = [];
+  particles = [];
+  trail = [];
+  score = 0;
+  frame = 0;
+  speed = 3;
+  state = 'play';
+}
+
+// ─── Pixel cat draw ───────────────────────────────────────────────────────────
+function drawCat(x, y, size, t) {
+  const rows = CAT.length;
+  const cols = CAT[0].length;
+  const cw = size / cols;
+  const ch = size * 0.75 / rows;
+  CAT.forEach((row, ri) => {
+    for (let ci = 0; ci < row.length; ci++) {
+      const ch2 = row[ci];
+      if (ch2 === 'B') {
+        const hue = ((ci + ri) * 18 + t * 4) % 360;
+        const color = `hsl(${hue},100%,68%)`;
+        ctx.fillStyle = color;
+        glow(color, 7);
+        ctx.fillRect(x + ci * cw, y + ri * ch, cw + 0.5, ch + 0.5);
+      } else if (ch2 === 'E') {
+        ctx.fillStyle = '#ffffff';
+        glow('#ffffff', 22);
+        ctx.fillRect(x + ci * cw, y + ri * ch, cw + 0.5, ch + 0.5);
+      } else if (ch2 === 'N') {
+        ctx.fillStyle = '#ff88aa';
+        glow('#ff88aa', 10);
+        ctx.fillRect(x + ci * cw, y + ri * ch, cw + 0.5, ch + 0.5);
+      }
+    }
+  });
+  noGlow();
+}
+
+// ─── Trail ────────────────────────────────────────────────────────────────────
+function drawTrail() {
+  for (let i = 0; i < trail.length; i++) {
+    const t = i / trail.length;
+    const color = RAINBOW[Math.floor(t * RAINBOW.length)];
+    const sz = cat.size * 0.5 * t;
+    ctx.globalAlpha = t * 0.9;
+    glow(color, 12);
+    ctx.fillStyle = color;
+    ctx.fillRect(trail[i].x - sz / 2, trail[i].y - sz * 0.38, sz, sz * 0.75);
+  }
+  ctx.globalAlpha = 1;
+  noGlow();
+}
+
+// ─── Obstacles: neon walls with hole ─────────────────────────────────────────
+function spawnObstacle() {
+  const holeH = Math.max(110 - score * 1.2, 70);
+  const holeY = Math.random() * (H - holeH - 100) + 50;
+  const colors = ['#ff0055','#00ccff','#aa00ff','#ff6600'];
+  const c = colors[Math.floor(Math.random() * colors.length)];
+  obstacles.push({ x: W + 20, holeY, holeH, w: 24, color: c });
+}
+
+function drawObstacle(o) {
+  glow(o.color, 20);
+  ctx.fillStyle = o.color;
+  // top segment
+  ctx.fillRect(o.x, 0, o.w, o.holeY);
+  // bottom segment
+  ctx.fillRect(o.x, o.holeY + o.holeH, o.w, H - o.holeY - o.holeH);
+  // bright edge caps
+  ctx.fillStyle = '#ffffff';
+  glow('#ffffff', 12);
+  ctx.fillRect(o.x - 2, o.holeY - 3, o.w + 4, 4);
+  ctx.fillRect(o.x - 2, o.holeY + o.holeH - 1, o.w + 4, 4);
+  noGlow();
+}
+
+function collidesObstacle(cat, o) {
+  const r = cat.size * 0.38;
+  const inX = cat.x + r > o.x && cat.x - r < o.x + o.w;
+  const inHole = cat.y + r > o.holeY && cat.y - r < o.holeY + o.holeH;
+  return inX && !inHole;
+}
+
+// ─── Sparks (collectibles) ─────────────────────────────────────────────────────
+function spawnSpark() {
+  const color = RAINBOW[Math.floor(Math.random() * RAINBOW.length)];
+  sparks.push({ x: W + 10, y: Math.random() * (H - 80) + 40, r: 7, color });
+}
+
+function drawSparks() {
+  sparks.forEach(s => {
+    glow(s.color, 18);
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r + 2 * Math.sin(frame * 0.15), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    noGlow();
+  });
+}
+
+// ─── Particles ────────────────────────────────────────────────────────────────
+function emitParticles(x, y) {
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 6 + 1;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+      life: 1,
+      color: RAINBOW[Math.floor(Math.random() * RAINBOW.length)],
+      r: Math.random() * 5 + 2,
+    });
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    glow(p.color, 16);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  noGlow();
+}
+
+// ─── Stars ────────────────────────────────────────────────────────────────────
+function drawStars() {
+  stars.forEach(s => {
+    const f = 0.5 + 0.5 * Math.sin(frame * 0.07 + s.x * 3.7);
+    ctx.globalAlpha = 0.4 + 0.6 * f * s.bright;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ─── HUD ─────────────────────────────────────────────────────────────────────
+function drawHUD() {
+  ctx.textAlign = 'center';
+
+  if (state === 'start') {
+    const p = 0.7 + 0.3 * Math.sin(frame * 0.07);
+    glow('#ff00cc', 30);
+    ctx.fillStyle = '#ff00cc';
+    ctx.font = `bold ${Math.round(W * 0.12)}px "Courier New"`;
+    ctx.fillText('NEON CAT', W / 2, H * 0.4);
+    ctx.font = `${Math.round(W * 0.055)}px "Courier New"`;
+    ctx.fillStyle = '#ffffff';
+    glow('#ffffff', 10);
+    ctx.fillText('CLASSIC', W / 2, H * 0.4 + W * 0.13);
+    ctx.globalAlpha = p;
+    ctx.font = `${Math.round(W * 0.04)}px "Courier New"`;
+    ctx.fillStyle = '#aaffee';
+    glow('#aaffee', 8);
+    ctx.fillText('move mouse / drag to fly', W / 2, H * 0.58);
+    ctx.globalAlpha = 1;
+    noGlow();
+    return;
+  }
+
+  // Score
+  ctx.font = `bold ${Math.round(W * 0.1)}px "Courier New"`;
+  glow('#00ccff', 22);
+  ctx.fillStyle = '#00ccff';
+  ctx.fillText(score, W / 2, 55);
+  noGlow();
+
+  if (state === 'dead') {
+    ctx.fillStyle = 'rgba(0,0,10,0.6)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.font = `bold ${Math.round(W * 0.1)}px "Courier New"`;
+    glow('#ff0055', 28);
+    ctx.fillStyle = '#ff0055';
+    ctx.fillText('GAME OVER', W / 2, H * 0.38);
+
+    ctx.font = `${Math.round(W * 0.055)}px "Courier New"`;
+    glow('#ffee00', 14);
+    ctx.fillStyle = '#ffee00';
+    ctx.fillText(`score  ${score}`, W / 2, H * 0.52);
+    ctx.fillText(`best   ${hiScore}`, W / 2, H * 0.6);
+
+    const p = 0.65 + 0.35 * Math.sin(frame * 0.1);
+    ctx.globalAlpha = p;
+    ctx.font = `${Math.round(W * 0.04)}px "Courier New"`;
+    ctx.fillStyle = '#aaffee';
+    glow('#aaffee', 8);
+    ctx.fillText('tap to restart', W / 2, H * 0.72);
+    ctx.globalAlpha = 1;
+    noGlow();
+  }
+}
+
+// ─── Update ───────────────────────────────────────────────────────────────────
+function update() {
+  frame++;
+  speed = 3 + Math.floor(score / 5) * 0.4;
+
+  // Stars
+  stars.forEach(s => { s.x -= s.spd * (speed / 3); if (s.x < 0) { s.x = W; s.y = Math.random() * H; } });
+
+  if (state !== 'play') return;
+
+  // Cat lerp towards target
+  const lerpT = 0.13;
+  cat.x = lerp(cat.x, cat.tx, lerpT);
+  cat.y = lerp(cat.y, cat.ty, lerpT);
+
+  // Clamp
+  cat.x = Math.max(cat.size / 2, Math.min(W - cat.size / 2, cat.x));
+  cat.y = Math.max(cat.size / 2, Math.min(H - cat.size / 2, cat.y));
+
+  // Trail — store behind cat
+  trail.unshift({ x: cat.x - cat.size * 0.35, y: cat.y });
+  if (trail.length > TRAIL_LEN) trail.pop();
+
+  // Spawn obstacles
+  const interval = Math.max(55, 110 - score * 2);
+  if (frame % interval === 0) spawnObstacle();
+
+  // Spawn sparks
+  if (frame % 70 === 35) spawnSpark();
+
+  // Move & check obstacles
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    obstacles[i].x -= speed;
+    if (obstacles[i].x + obstacles[i].w < -10) { obstacles.splice(i, 1); score++; if (score > hiScore) hiScore = score; continue; }
+    if (collidesObstacle(cat, obstacles[i])) { die(); return; }
+  }
+
+  // Move & collect sparks
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    sparks[i].x -= speed * 0.9;
+    if (sparks[i].x < -10) { sparks.splice(i, 1); continue; }
+    const dx = cat.x - sparks[i].x, dy = cat.y - sparks[i].y;
+    if (Math.sqrt(dx * dx + dy * dy) < cat.size * 0.5 + sparks[i].r) {
+      emitParticles(sparks[i].x, sparks[i].y);
+      sparks.splice(i, 1);
+      score += 2;
+      if (score > hiScore) hiScore = score;
+    }
+  }
+
+  // Particles
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.vx *= 0.97; p.life -= 0.025; });
+  for (let i = particles.length - 1; i >= 0; i--) { if (particles[i].life <= 0) particles.splice(i, 1); }
+}
+
+function die() {
+  state = 'dead';
+  emitParticles(cat.x, cat.y);
+  trail = [];
+}
+
+// ─── Draw ─────────────────────────────────────────────────────────────────────
+function draw() {
+  // BG
+  ctx.fillStyle = '#04000e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Nebula
+  [
+    ['#180040', W * 0.3, H * 0.25, 180],
+    ['#00153a', W * 0.8, H * 0.6, 150],
+    ['#0a0030', W * 0.1, H * 0.75, 120],
+  ].forEach(([c, nx, ny, nr]) => {
+    const g = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
+    g.addColorStop(0, c + 'bb');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  });
+
+  drawStars();
+  obstacles.forEach(drawObstacle);
+  drawSparks();
+  drawTrail();
+  drawParticles();
+
+  if (state !== 'dead') {
+    drawCat(cat.x - cat.size / 2, cat.y - cat.size * 0.38, cat.size, frame);
+  }
+
+  // Neon border lines
+  glow('#00ccff', 8);
+  ctx.strokeStyle = 'rgba(0,200,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, W - 2, H - 2);
+  noGlow();
+
+  drawHUD();
+}
+
+// ─── Loop ─────────────────────────────────────────────────────────────────────
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

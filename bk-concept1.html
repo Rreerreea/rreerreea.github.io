@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BK · Накорми зал</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #2A1508; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.08); display: flex; flex-direction: column; background: #4A1A0A; position: relative; }
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(135deg, #4A1A0A 0%, #6B2D14 100%); padding: 28px 20px 16px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; }
+  .hdr-logo { display: flex; align-items: center; gap: 10px; }
+  .hdr-logo-icon { width: 38px; height: 38px; background: linear-gradient(135deg, #FF6B00, #FFC72C); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #4A1A0A; }
+  .hdr-logo b { font-size: 17px; font-weight: 800; color: white; }
+  .hdr-logo span { font-size: 11px; color: rgba(255,255,255,0.5); display: block; margin-top: 1px; }
+  .hdr-actions { display: flex; gap: 10px; }
+  .hdr-btn { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; background: #F5F0EB; }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* BOTTOM NAV */
+  .bnav { background: white; display: flex; align-items: center; justify-content: space-around; padding: 8px 0 20px; flex-shrink: 0; border-top: 0.5px solid rgba(0,0,0,0.08); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 8px; }
+  .bn .i { font-size: 22px; opacity: 0.3; transition: opacity .2s; }
+  .bn .l { font-size: 10px; font-weight: 600; color: #8E8E93; transition: color .2s; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #FF6B00; font-weight: 700; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(30,30,30,0.92); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ═══ GAME SCREEN ═══ */
+  .game-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .game-timer { font-size: 36px; font-weight: 900; color: #4A1A0A; font-variant-numeric: tabular-nums; }
+  .game-timer.warn { color: #E53935; animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.05); } }
+  .game-score { background: linear-gradient(135deg, #FF6B00, #FFC72C); color: white; padding: 8px 16px; border-radius: 14px; font-size: 14px; font-weight: 800; }
+
+  /* HALL GRID */
+  .hall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .seat { background: white; border-radius: 14px; padding: 10px 6px; text-align: center; min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all .2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; }
+  .seat.empty { background: #F0EBE6; opacity: 0.5; }
+  .seat.served { background: #E8F5E9; border: 2px solid #66BB6A; }
+  .seat.angry { background: #FFEBEE; animation: shake .3s; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .seat-emoji { font-size: 28px; margin-bottom: 2px; transition: transform .2s; }
+  .seat.served .seat-emoji { transform: scale(1.2); }
+  .order-bubble { position: absolute; top: -8px; right: -4px; background: #FFC72C; border-radius: 12px; padding: 2px 6px; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); animation: bobble 1s ease-in-out infinite; }
+  @keyframes bobble { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .seat-wait { font-size: 9px; color: #8E8E93; margin-top: 2px; font-weight: 600; }
+  .seat-wait.urgent { color: #E53935; font-weight: 800; }
+  .seat-table { font-size: 9px; color: #B0A89F; margin-top: 1px; }
+
+  /* SERVING COUNTER */
+  .counter { background: white; border-radius: 18px; padding: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .counter-label { font-size: 12px; font-weight: 700; color: #8E8E93; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .counter-items { display: flex; gap: 10px; justify-content: center; }
+  .food-btn { width: 64px; height: 64px; border-radius: 16px; background: #F5F0EB; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; transition: all .15s; border: 3px solid transparent; position: relative; }
+  .food-btn:active { transform: scale(0.93); }
+  .food-btn.selected { border-color: #FF6B00; background: #FFF3E0; box-shadow: 0 0 0 3px rgba(255,107,0,0.2); }
+  .food-btn .food-count { position: absolute; top: -4px; right: -4px; background: #FF6B00; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+  /* START OVERLAY */
+  .start-overlay { position: absolute; inset: 0; background: rgba(74,26,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(8px); }
+  .start-overlay.hidden { display: none; }
+  .start-title { font-size: 28px; font-weight: 900; color: #FFC72C; margin-bottom: 8px; text-align: center; }
+  .start-sub { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 30px; text-align: center; line-height: 1.5; padding: 0 20px; }
+  .start-btn { background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #4A1A0A; font-size: 18px; font-weight: 900; padding: 16px 40px; border-radius: 16px; cursor: pointer; border: none; font-family: inherit; box-shadow: 0 4px 20px rgba(255,107,0,0.4); transition: transform .15s; }
+  .start-btn:active { transform: scale(0.95); }
+  .start-emoji { font-size: 60px; margin-bottom: 16px; }
+
+  /* RESULTS OVERLAY */
+  .results-overlay { position: absolute; inset: 0; background: rgba(74,26,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(8px); }
+  .results-overlay.hidden { display: none; }
+  .results-badge { font-size: 64px; margin-bottom: 12px; }
+  .results-title { font-size: 24px; font-weight: 900; color: #FFC72C; margin-bottom: 6px; }
+  .results-rank { font-size: 16px; color: white; font-weight: 700; margin-bottom: 4px; }
+  .results-score { font-size: 40px; font-weight: 900; color: white; margin-bottom: 6px; }
+  .results-score-label { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+  .results-reward { background: rgba(255,199,44,0.15); border: 1px solid rgba(255,199,44,0.3); border-radius: 14px; padding: 14px 24px; margin-bottom: 24px; text-align: center; }
+  .results-reward-title { font-size: 13px; color: #FFC72C; font-weight: 700; margin-bottom: 4px; }
+  .results-reward-value { font-size: 16px; color: white; font-weight: 800; }
+  .results-btn { background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #4A1A0A; font-size: 16px; font-weight: 800; padding: 14px 36px; border-radius: 14px; cursor: pointer; border: none; font-family: inherit; }
+
+  /* CARDS */
+  .wc { background: white; border-radius: 18px; padding: 16px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .wc-title { font-size: 16px; font-weight: 800; color: #4A1A0A; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* REWARDS TABLE */
+  .reward-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F0EBE6; }
+  .reward-row:last-child { border-bottom: none; }
+  .reward-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .reward-info { flex: 1; }
+  .reward-name { font-size: 14px; font-weight: 700; color: #4A1A0A; }
+  .reward-desc { font-size: 12px; color: #8E8E93; margin-top: 2px; line-height: 1.3; }
+  .reward-cond { font-size: 11px; color: #FF6B00; font-weight: 600; margin-top: 2px; }
+  .reward-badge { font-size: 12px; font-weight: 800; color: #FF6B00; background: #FFF3E0; padding: 4px 10px; border-radius: 8px; flex-shrink: 0; }
+
+  /* STREAK */
+  .streak-bar { display: flex; gap: 6px; margin-top: 12px; }
+  .streak-day { flex: 1; text-align: center; }
+  .streak-dot { width: 32px; height: 32px; border-radius: 50%; background: #F0EBE6; display: flex; align-items: center; justify-content: center; font-size: 14px; margin: 0 auto 3px; }
+  .streak-dot.done { background: #FF6B00; }
+  .streak-dot.current { background: #FFC72C; animation: pulseStreak 1s infinite alternate; }
+  @keyframes pulseStreak { to { box-shadow: 0 0 0 4px rgba(255,199,44,0.3); } }
+  .streak-lbl { font-size: 9px; color: #8E8E93; font-weight: 600; }
+
+  /* HOW TO PLAY */
+  .step-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid #F0EBE6; }
+  .step-row:last-child { border-bottom: none; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: white; font-size: 14px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-info { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 700; color: #4A1A0A; margin-bottom: 2px; }
+  .step-desc { font-size: 12px; color: #8E8E93; line-height: 1.4; }
+
+  /* PROFILE */
+  .prof-hero { background: white; border-radius: 20px; padding: 20px; margin-bottom: 10px; text-align: center; }
+  .prof-ava { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #FF6B00, #FFC72C); display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 12px; }
+  .prof-name { font-size: 18px; font-weight: 800; color: #4A1A0A; }
+  .prof-sub { font-size: 12px; color: #8E8E93; margin-top: 3px; }
+  .prof-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #FF6B00; background: #FFF3E0; padding: 3px 10px; border-radius: 10px; margin-top: 8px; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 14px; border-top: 1px solid #F0EBE6; padding-top: 12px; }
+  .ps { text-align: center; border-right: 1px solid #F0EBE6; }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 20px; font-weight: 900; color: #4A1A0A; }
+  .ps-l { font-size: 10px; color: #8E8E93; margin-top: 2px; }
+  .prof-menu { background: white; border-radius: 18px; overflow: hidden; }
+  .pm-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #F0EBE6; cursor: pointer; }
+  .pm-row:last-child { border-bottom: none; }
+  .pm-row:active { background: #F5F0EB; }
+  .pm-icon { font-size: 20px; }
+  .pm-label { flex: 1; font-size: 14px; font-weight: 600; color: #4A1A0A; }
+  .pm-arrow { font-size: 14px; color: #B0A89F; }
+
+  /* SERVED ANIMATION */
+  @keyframes served { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .seat.just-served .seat-emoji { animation: served .4s ease; }
+
+  /* +1 FLOAT */
+  .float-plus { position: absolute; font-size: 16px; font-weight: 900; color: #FF6B00; pointer-events: none; animation: floatUp .8s ease forwards; z-index: 60; }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+
+  /* MOBILE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #4A1A0A; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+  }
+  @media (max-width: 375px) {
+    .game-timer { font-size: 28px; }
+    .seat { padding: 8px 4px; min-height: 78px; }
+    .seat-emoji { font-size: 24px; }
+    .food-btn { width: 56px; height: 56px; font-size: 28px; }
+    .order-bubble { font-size: 14px; }
+    .prof-ava { width: 60px; height: 60px; font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- HEADER -->
+  <div class="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-logo">
+        <div class="hdr-logo-icon">BK</div>
+        <div><b>Накорми зал</b><span>Мини-игра · Burger King</span></div>
+      </div>
+      <div class="hdr-actions">
+        <div class="hdr-btn" onclick="toast('Звук вкл')">🔊</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- ═══ GAME SCREEN ═══ -->
+    <div class="screen active" id="s-game">
+      <div class="game-header">
+        <div class="game-timer" id="timer">01:00</div>
+        <div class="game-score" id="scoreDisplay">Накормлено: 0</div>
+      </div>
+
+      <!-- HALL -->
+      <div class="hall" id="hall">
+        <!-- 12 seats generated by JS -->
+      </div>
+
+      <!-- COUNTER -->
+      <div class="counter">
+        <div class="counter-label">🍳 Раздача — выбери и подай</div>
+        <div class="counter-items" id="counterItems">
+          <div class="food-btn" data-food="🍔" onclick="selectFood(this)">🍔<span class="food-count">∞</span></div>
+          <div class="food-btn" data-food="🍟" onclick="selectFood(this)">🍟<span class="food-count">∞</span></div>
+          <div class="food-btn" data-food="🥤" onclick="selectFood(this)">🥤<span class="food-count">∞</span></div>
+          <div class="food-btn" data-food="☕" onclick="selectFood(this)">☕<span class="food-count">∞</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ REWARDS SCREEN ═══ -->
+    <div class="screen" id="s-rewards">
+      <div class="wc">
+        <div class="wc-title">🏆 Награды за смену</div>
+        <div class="reward-row">
+          <div class="reward-icon" style="background:#FFF3E0;">🧑‍🍳</div>
+          <div class="reward-info">
+            <div class="reward-name">Стажёр</div>
+            <div class="reward-desc">Менее 8 гостей за смену</div>
+            <div class="reward-cond">Награда: 50 бонусных баллов</div>
+          </div>
+          <div class="reward-badge">50 б.</div>
+        </div>
+        <div class="reward-row">
+          <div class="reward-icon" style="background:#E3F2FD;">👨‍💼</div>
+          <div class="reward-info">
+            <div class="reward-name">Менеджер смены</div>
+            <div class="reward-desc">8–12 гостей за смену</div>
+            <div class="reward-cond">Награда: скидка 20% на 7 дней</div>
+          </div>
+          <div class="reward-badge">-20%</div>
+        </div>
+        <div class="reward-row">
+          <div class="reward-icon" style="background:linear-gradient(135deg,#FFC72C,#FF6B00);">👑</div>
+          <div class="reward-info">
+            <div class="reward-name">Король зала</div>
+            <div class="reward-desc">13+ гостей за смену</div>
+            <div class="reward-cond">Награда: бесплатный картофель фри или кофе</div>
+          </div>
+          <div class="reward-badge" style="color:#FFC72C;background:#4A1A0A;">FREE</div>
+        </div>
+      </div>
+
+      <div class="wc">
+        <div class="wc-title">🔥 Бонус за серию</div>
+        <div style="font-size:13px;color:#4A1A0A;line-height:1.5;margin-bottom:12px;">
+          5 визитов подряд — <b>двойная скидка</b> или <b>бесплатный Воппер</b> (при заказе от 400 ₽)
+        </div>
+        <div class="streak-bar">
+          <div class="streak-day"><div class="streak-dot done">🔥</div><div class="streak-lbl">Пн</div></div>
+          <div class="streak-day"><div class="streak-dot done">🔥</div><div class="streak-lbl">Вт</div></div>
+          <div class="streak-day"><div class="streak-dot done">🔥</div><div class="streak-lbl">Ср</div></div>
+          <div class="streak-day"><div class="streak-dot current">?</div><div class="streak-lbl">Чт</div></div>
+          <div class="streak-day"><div class="streak-dot"></div><div class="streak-lbl">Пт</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#FF6B00;font-weight:700;text-align:center;">Серия: 3 из 5 дней 🔥</div>
+      </div>
+    </div>
+
+    <!-- ═══ HOW TO PLAY ═══ -->
+    <div class="screen" id="s-rules">
+      <div class="wc">
+        <div class="wc-title">📖 Как играть</div>
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-info">
+            <div class="step-title">📱 Отсканируй QR-код</div>
+            <div class="step-desc">Найди QR-код на подносе, столе или кассе Burger King и отсканируй его камерой</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-info">
+            <div class="step-title">🎮 Играй 60 секунд</div>
+            <div class="step-desc">Корми гостей в зале! Выбирай еду на раздаче и подавай нужный заказ каждому гостю</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-info">
+            <div class="step-title">🍔 Подавай правильно</div>
+            <div class="step-desc">Нажми на еду внизу, затем на гостя с таким же заказом. Если еда совпала — гость доволен!</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">4</div>
+          <div class="step-info">
+            <div class="step-title">⏱ Не заставляй ждать</div>
+            <div class="step-desc">Если гость ждёт дольше 8 секунд — он уходит злой. Корми быстрее!</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">5</div>
+          <div class="step-info">
+            <div class="step-title">🏆 Получи награду</div>
+            <div class="step-desc">Чем больше гостей накормишь, тем круче награда: от баллов до бесплатного блюда!</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wc">
+        <div class="wc-title">💡 Советы</div>
+        <div style="font-size:13px;color:#4A1A0A;line-height:1.6;">
+          • Сначала выбирай еду, потом нажимай на гостя<br>
+          • Приоритет — гостям с красным таймером ⏰<br>
+          • Играй каждый день для бонуса серии 🔥<br>
+          • 5 визитов подряд = бесплатный Воппер 🍔
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROFILE SCREEN ═══ -->
+    <div class="screen" id="s-profile">
+      <div class="prof-hero">
+        <div class="prof-ava">🍔</div>
+        <div class="prof-name">Андрей Смирнов</div>
+        <div class="prof-sub">Участник с 15 января 2026</div>
+        <div class="prof-badge">👨‍💼 Менеджер смены</div>
+        <div class="prof-stats">
+          <div class="ps"><div class="ps-n" id="profGames">12</div><div class="ps-l">Игр</div></div>
+          <div class="ps"><div class="ps-n" id="profBest">14</div><div class="ps-l">Рекорд</div></div>
+          <div class="ps"><div class="ps-n" id="profTotal">98</div><div class="ps-l">Всего гостей</div></div>
+        </div>
+      </div>
+
+      <div class="wc">
+        <div class="wc-title">📊 Текущий статус</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="font-size:32px;">👨‍💼</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#4A1A0A;">Менеджер смены</div>
+            <div style="font-size:12px;color:#8E8E93;">Следующий: Король зала (13+ гостей)</div>
+          </div>
+        </div>
+        <div style="height:6px;background:#F0EBE6;border-radius:3px;overflow:hidden;">
+          <div style="width:70%;height:100%;background:linear-gradient(90deg,#FF6B00,#FFC72C);border-radius:3px;"></div>
+        </div>
+      </div>
+
+      <div class="wc">
+        <div class="wc-title">🔥 Серия визитов</div>
+        <div style="text-align:center;">
+          <div style="font-size:36px;font-weight:900;color:#FF6B00;">3</div>
+          <div style="font-size:12px;color:#8E8E93;">дня подряд · до бонуса осталось 2</div>
+        </div>
+      </div>
+
+      <div class="prof-menu" style="margin-top:10px;">
+        <div class="pm-row" onclick="toast('История игр')"><span class="pm-icon">📋</span><span class="pm-label">История игр</span><span class="pm-arrow">›</span></div>
+        <div class="pm-row" onclick="toast('Мои награды')"><span class="pm-icon">🎁</span><span class="pm-label">Мои награды</span><span class="pm-arrow">›</span></div>
+        <div class="pm-row" onclick="toast('Настройки')"><span class="pm-icon">⚙️</span><span class="pm-label">Настройки</span><span class="pm-arrow">›</span></div>
+        <div class="pm-row" onclick="toast('Поддержка')"><span class="pm-icon">💬</span><span class="pm-label">Поддержка</span><span class="pm-arrow">›</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- START OVERLAY -->
+  <div class="start-overlay" id="startOverlay">
+    <div class="start-emoji">🍔</div>
+    <div class="start-title">НАКОРМИ ЗАЛ</div>
+    <div class="start-sub">Корми гостей за 60 секунд!<br>Выбирай еду и подавай заказы.</div>
+    <button class="start-btn" onclick="startGame()">НАЧАТЬ СМЕНУ</button>
+  </div>
+
+  <!-- RESULTS OVERLAY -->
+  <div class="results-overlay hidden" id="resultsOverlay">
+    <div class="results-badge" id="resBadge">🧑‍🍳</div>
+    <div class="results-title">СМЕНА ОКОНЧЕНА!</div>
+    <div class="results-score" id="resScore">0</div>
+    <div class="results-score-label">гостей накормлено</div>
+    <div class="results-rank" id="resRank">Стажёр</div>
+    <div class="results-reward" id="resReward">
+      <div class="results-reward-title">Твоя награда</div>
+      <div class="results-reward-value" id="resRewardVal">50 бонусных баллов</div>
+    </div>
+    <button class="results-btn" onclick="resetGame()">ИГРАТЬ ЕЩЁ РАЗ</button>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn on" onclick="nav('game',this)"><span class="i">🎮</span><span class="l">Игра</span></div>
+    <div class="bn" onclick="nav('rewards',this)"><span class="i">🏆</span><span class="l">Награды</span></div>
+    <div class="bn" onclick="nav('rules',this)"><span class="i">📖</span><span class="l">Правила</span></div>
+    <div class="bn" onclick="nav('profile',this)"><span class="i">👤</span><span class="l">Профиль</span></div>
+  </div>
+
+</div>
+
+<script>
+// ═══ NAV ═══
+function nav(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ═══ TOAST ═══
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ═══ GAME STATE ═══
+const FOODS = ['🍔', '🍟', '🥤', '☕'];
+const MOODS = { happy: '😊', neutral: '😐', angry: '😠', served: '😋' };
+let gameRunning = false;
+let timeLeft = 60;
+let score = 0;
+let selectedFood = null;
+let seats = [];
+let timerInterval = null;
+let spawnInterval = null;
+let tickInterval = null;
+
+// ═══ INIT HALL ═══
+function initHall() {
+  const hall = document.getElementById('hall');
+  hall.innerHTML = '';
+  seats = [];
+  for (let i = 0; i < 12; i++) {
+    const seat = document.createElement('div');
+    seat.className = 'seat empty';
+    seat.innerHTML = `
+      <div class="seat-emoji">🪑</div>
+      <div class="seat-table">Стол ${i + 1}</div>
+    `;
+    seat.addEventListener('click', () => serveGuest(i));
+    hall.appendChild(seat);
+    seats.push({ el: seat, occupied: false, order: null, waitTime: 0, served: false });
+  }
+}
+
+// ═══ SPAWN GUEST ═══
+function spawnGuest() {
+  const emptySeats = seats.filter(s => !s.occupied && !s.served);
+  if (emptySeats.length === 0) return;
+  const seat = emptySeats[Math.floor(Math.random() * emptySeats.length)];
+  const idx = seats.indexOf(seat);
+  const food = FOODS[Math.floor(Math.random() * FOODS.length)];
+  seat.occupied = true;
+  seat.order = food;
+  seat.waitTime = 0;
+  seat.served = false;
+  const el = seat.el;
+  el.className = 'seat';
+  el.innerHTML = `
+    <div class="order-bubble">${food}</div>
+    <div class="seat-emoji">${MOODS.neutral}</div>
+    <div class="seat-wait">Ждёт...</div>
+    <div class="seat-table">Стол ${idx + 1}</div>
+  `;
+}
+
+// ═══ SELECT FOOD ═══
+function selectFood(btn) {
+  if (!gameRunning) return;
+  document.querySelectorAll('.food-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedFood = btn.dataset.food;
+}
+
+// ═══ SERVE GUEST ═══
+function serveGuest(idx) {
+  if (!gameRunning || !selectedFood) return;
+  const seat = seats[idx];
+  if (!seat.occupied || seat.served) return;
+
+  if (seat.order === selectedFood) {
+    // Correct serve
+    seat.served = true;
+    seat.occupied = false;
+    score++;
+    document.getElementById('scoreDisplay').textContent = `Накормлено: ${score}`;
+
+    const el = seat.el;
+    el.className = 'seat served just-served';
+    el.innerHTML = `
+      <div class="seat-emoji">${MOODS.served}</div>
+      <div class="seat-table" style="color:#66BB6A;font-weight:700;">Готово!</div>
+    `;
+
+    // Float +1
+    const plus = document.createElement('div');
+    plus.className = 'float-plus';
+    plus.textContent = '+1 🍔';
+    plus.style.left = el.offsetLeft + el.offsetWidth / 2 - 15 + 'px';
+    plus.style.top = el.offsetTop - 10 + 'px';
+    document.getElementById('hall').appendChild(plus);
+    setTimeout(() => plus.remove(), 800);
+
+    // Clear seat after delay
+    setTimeout(() => {
+      if (seats[idx]) {
+        seat.served = false;
+        el.className = 'seat empty';
+        el.innerHTML = `<div class="seat-emoji">🪑</div><div class="seat-table">Стол ${idx + 1}</div>`;
+      }
+    }, 1500);
+  } else {
+    // Wrong food
+    const el = seat.el;
+    el.classList.add('angry');
+    toast('Неправильный заказ! ' + seat.order);
+    setTimeout(() => el.classList.remove('angry'), 400);
+  }
+}
+
+// ═══ TICK (WAIT TIMES) ═══
+function tick() {
+  seats.forEach((seat, idx) => {
+    if (!seat.occupied || seat.served) return;
+    seat.waitTime++;
+    const el = seat.el;
+    const waitEl = el.querySelector('.seat-wait');
+    const emojiEl = el.querySelector('.seat-emoji');
+
+    if (seat.waitTime >= 8) {
+      // Guest leaves angry
+      seat.occupied = false;
+      el.className = 'seat angry';
+      el.innerHTML = `<div class="seat-emoji">${MOODS.angry}</div><div class="seat-table" style="color:#E53935;">Ушёл!</div>`;
+      setTimeout(() => {
+        el.className = 'seat empty';
+        el.innerHTML = `<div class="seat-emoji">🪑</div><div class="seat-table">Стол ${idx + 1}</div>`;
+      }, 1200);
+    } else if (seat.waitTime >= 5) {
+      if (emojiEl) emojiEl.textContent = MOODS.angry;
+      if (waitEl) { waitEl.textContent = `${8 - seat.waitTime}с`; waitEl.className = 'seat-wait urgent'; }
+    } else if (seat.waitTime >= 3) {
+      if (emojiEl) emojiEl.textContent = MOODS.neutral;
+      if (waitEl) waitEl.textContent = `${8 - seat.waitTime}с`;
+    }
+  });
+}
+
+// ═══ START GAME ═══
+function startGame() {
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('resultsOverlay').classList.add('hidden');
+  gameRunning = true;
+  timeLeft = 60;
+  score = 0;
+  selectedFood = null;
+  document.querySelectorAll('.food-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('scoreDisplay').textContent = 'Накормлено: 0';
+  initHall();
+  updateTimer();
+
+  // Spawn first guests
+  spawnGuest();
+  spawnGuest();
+  spawnGuest();
+
+  // Timer
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }, 1000);
+
+  // Spawn guests
+  spawnInterval = setInterval(() => {
+    if (gameRunning) spawnGuest();
+  }, 2500);
+
+  // Tick wait times
+  tickInterval = setInterval(() => {
+    if (gameRunning) tick();
+  }, 1000);
+}
+
+// ═══ UPDATE TIMER ═══
+function updateTimer() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const timerEl = document.getElementById('timer');
+  timerEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  if (timeLeft <= 10) {
+    timerEl.classList.add('warn');
+  } else {
+    timerEl.classList.remove('warn');
+  }
+}
+
+// ═══ END GAME ═══
+function endGame() {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  clearInterval(spawnInterval);
+  clearInterval(tickInterval);
+
+  let rank, badge, reward;
+  if (score >= 13) {
+    rank = 'Король зала';
+    badge = '👑';
+    reward = 'Бесплатный картофель фри или кофе';
+  } else if (score >= 8) {
+    rank = 'Менеджер смены';
+    badge = '👨‍💼';
+    reward = 'Скидка 20% на 7 дней';
+  } else {
+    rank = 'Стажёр';
+    badge = '🧑‍🍳';
+    reward = '50 бонусных баллов';
+  }
+
+  document.getElementById('resBadge').textContent = badge;
+  document.getElementById('resScore').textContent = score;
+  document.getElementById('resRank').textContent = rank;
+  document.getElementById('resRewardVal').textContent = reward;
+  document.getElementById('resultsOverlay').classList.remove('hidden');
+
+  // Update profile
+  const gamesEl = document.getElementById('profGames');
+  const bestEl = document.getElementById('profBest');
+  const totalEl = document.getElementById('profTotal');
+  gamesEl.textContent = parseInt(gamesEl.textContent) + 1;
+  if (score > parseInt(bestEl.textContent)) bestEl.textContent = score;
+  totalEl.textContent = parseInt(totalEl.textContent) + score;
+}
+
+// ═══ RESET GAME ═══
+function resetGame() {
+  document.getElementById('resultsOverlay').classList.add('hidden');
+  document.getElementById('startOverlay').classList.remove('hidden');
+  initHall();
+  timeLeft = 60;
+  updateTimer();
+  document.getElementById('timer').classList.remove('warn');
+  document.getElementById('scoreDisplay').textContent = 'Накормлено: 0';
+}
+
+// ═══ INIT ═══
+initHall();
+</script>
+</body>
+</html>

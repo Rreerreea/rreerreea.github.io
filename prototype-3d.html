@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>George — UX/UI Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    cursor: default;
+    user-select: none;
+  }
+
+  #scene-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .tooltip {
+    position: fixed;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+    z-index: 100;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .tooltip.visible { opacity: 1; transform: translateY(0); }
+  .tooltip .key-hint { font-size: 11px; opacity: 0.5; margin-top: 4px; }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(6px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: #fff; border-radius: 20px; padding: 40px;
+    max-width: 620px; width: 90%; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    animation: modalIn 0.3s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { transform: scale(0.92) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .modal h2 { font-size: 24px; margin-bottom: 16px; color: #111; }
+  .modal p { color: #555; line-height: 1.7; margin-bottom: 10px; font-size: 15px; }
+  .modal-close {
+    float: right; background: #f3f4f6; border: none;
+    width: 34px; height: 34px; border-radius: 50%; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: #e5e7eb; }
+
+  .case-list { list-style: none; padding: 0; margin: 12px 0; }
+  .case-list li {
+    padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
+    color: #333; font-size: 15px;
+  }
+  .case-list li:hover { background: #f0f0ff; border-color: #818cf8; color: #4338ca; }
+  .case-list li span { color: #999; font-size: 13px; display: block; margin-top: 2px; }
+
+  .controls-hint {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.75); color: #fff; padding: 10px 24px;
+    border-radius: 14px; font-size: 13px; display: flex; gap: 20px;
+    z-index: 50; transition: opacity 0.6s; backdrop-filter: blur(8px);
+  }
+  .controls-hint kbd {
+    background: rgba(255,255,255,0.15); padding: 2px 8px;
+    border-radius: 5px; font-family: inherit; font-size: 12px;
+  }
+
+  .name-badge {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;
+    z-index: 50; letter-spacing: 0.5px; text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .name-badge strong { color: #fff; font-size: 16px; }
+
+  #loading {
+    position: fixed; inset: 0; background: #1a1a1a;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000; color: #fff; font-size: 16px; transition: opacity 0.5s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+
+  #debug-info {
+    position: fixed; top: 60px; left: 12px;
+    color: rgba(255,255,255,0.5); font-size: 11px; font-family: monospace;
+    z-index: 50; display: none;
+  }
+  body.debug #debug-info { display: block; }
+</style>
+</head>
+<body>
+
+<div id="loading">Загрузка...</div>
+<div class="name-badge"><strong>George</strong> — UX/UI Designer</div>
+<canvas id="scene-canvas"></canvas>
+
+<div class="tooltip" id="tooltip">
+  <div id="tooltip-text"></div>
+  <div class="key-hint">Пробел — открыть</div>
+</div>
+
+<div class="controls-hint" id="hint">
+  <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Ехать</span>
+  <span><kbd>Пробел</kbd> Открыть</span>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div id="debug-info"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const tooltip = document.getElementById('tooltip');
+const tooltipText = document.getElementById('tooltip-text');
+const hint = document.getElementById('hint');
+const modalOverlay = document.getElementById('modal-overlay');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const canvas = document.getElementById('scene-canvas');
+const loadingEl = document.getElementById('loading');
+const debugInfo = document.getElementById('debug-info');
+
+// === RENDERER ===
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x2c2c30);
+
+// === CAMERA ===
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 500);
+// Nice desk overview angle
+camera.position.set(0, 18, 16);
+camera.lookAt(0, 0, 0);
+
+// OrbitControls — press O to toggle for debugging
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+controls.target.set(0, 0, 0);
+controls.enabled = false;
+canvas.style.pointerEvents = 'none';
+
+// === LIGHTS ===
+// Warm ambient
+scene.add(new THREE.AmbientLight(0xfff0e0, 0.5));
+
+// Key light (top-left, warm white)
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+keyLight.position.set(-8, 20, 8);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.near = 1;
+keyLight.shadow.camera.far = 50;
+keyLight.shadow.camera.left = -15;
+keyLight.shadow.camera.right = 15;
+keyLight.shadow.camera.top = 15;
+keyLight.shadow.camera.bottom = -15;
+keyLight.shadow.bias = -0.002;
+scene.add(keyLight);
+
+// Fill light (right side, cool)
+const fillLight = new THREE.DirectionalLight(0xc0d0ff, 0.5);
+fillLight.position.set(8, 8, -4);
+scene.add(fillLight);
+
+// Rim light from behind
+const rimLight = new THREE.DirectionalLight(0xffd0a0, 0.3);
+rimLight.position.set(0, 5, -12);
+scene.add(rimLight);
+
+// === DESK SURFACE ===
+const deskGeo = new THREE.BoxGeometry(28, 0.4, 18);
+const deskMat = new THREE.MeshStandardMaterial({
+  color: 0x3a3028,
+  roughness: 0.7,
+  metalness: 0.0,
+});
+const deskMesh = new THREE.Mesh(deskGeo, deskMat);
+deskMesh.position.y = -0.2;
+deskMesh.receiveShadow = true;
+deskMesh.castShadow = true;
+scene.add(deskMesh);
+
+// Subtle desk edge bevel
+const edgeGeo = new THREE.BoxGeometry(28.2, 0.1, 18.2);
+const edgeMat = new THREE.MeshStandardMaterial({ color: 0x2a2220, roughness: 0.8 });
+const edgeMesh = new THREE.Mesh(edgeGeo, edgeMat);
+edgeMesh.position.y = -0.42;
+edgeMesh.receiveShadow = true;
+scene.add(edgeMesh);
+
+// === LOAD MODELS ===
+const loader = new GLTFLoader();
+let macbookModel = null;
+let carModel = null;
+let modelsLoaded = 0;
+
+function checkAllLoaded() {
+  modelsLoaded++;
+  if (modelsLoaded >= 2) {
+    loadingEl.classList.add('hidden');
+    console.log('All models loaded!');
+  }
+}
+
+// --- MacBook ---
+loader.load('/macbook.glb', (gltf) => {
+  macbookModel = gltf.scene;
+
+  // Measure and scale
+  const box = new THREE.Box3().setFromObject(macbookModel);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  // MacBook should be ~8 units wide
+  const targetW = 8;
+  const scale = targetW / maxDim;
+  macbookModel.scale.setScalar(scale);
+
+  // Center on desk
+  const scaledBox = new THREE.Box3().setFromObject(macbookModel);
+  const center = scaledBox.getCenter(new THREE.Vector3());
+  macbookModel.position.x -= center.x;
+  macbookModel.position.z -= center.z;
+  // Sit on desk surface
+  macbookModel.position.y -= scaledBox.min.y;
+
+  // Shadows
+  macbookModel.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  scene.add(macbookModel);
+
+  const finalBox = new THREE.Box3().setFromObject(macbookModel);
+  const finalSize = finalBox.getSize(new THREE.Vector3());
+  console.log(`MacBook loaded: ${finalSize.x.toFixed(2)} x ${finalSize.y.toFixed(2)} x ${finalSize.z.toFixed(2)}`);
+
+  checkAllLoaded();
+}, (p) => {
+  if (p.total > 0) loadingEl.textContent = `MacBook... ${Math.round(p.loaded/p.total*100)}%`;
+}, (err) => {
+  console.error('MacBook load error:', err);
+  checkAllLoaded();
+});
+
+// --- Car ---
+loader.load('/car.glb', (gltf) => {
+  const carScene = gltf.scene;
+
+  // Scale car — should be small, ~1.5 units long
+  const box = new THREE.Box3().setFromObject(carScene);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 1.8 / maxDim;
+  carScene.scale.setScalar(scale);
+
+  // Center pivot at bottom-center
+  const scaledBox = new THREE.Box3().setFromObject(carScene);
+  const center = scaledBox.getCenter(new THREE.Vector3());
+  carScene.position.set(-center.x, -scaledBox.min.y, -center.z);
+
+  // Wrap in group for rotation
+  carModel = new THREE.Group();
+  carModel.add(carScene);
+
+  // Shadows
+  carModel.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  // Start position — front-right of desk
+  car.x = 6;
+  car.z = 5;
+  car.angle = -90;
+
+  scene.add(carModel);
+  console.log(`Car loaded. Scale=${scale.toFixed(4)}`);
+  checkAllLoaded();
+}, undefined, (err) => {
+  console.error('Car load error:', err);
+  checkAllLoaded();
+});
+
+// === CAR STATE ===
+const car = {
+  x: 6, z: 5,
+  angle: 0,
+  speed: 0,
+  maxSpeed: 0.12,
+  acceleration: 0.005,
+  friction: 0.96,
+  turnSpeed: 3,
+};
+
+// === INTERACTIVE OBJECTS (manual placement for now) ===
+const interactiveZones = [
+  { id: 'macbook', label: 'Кейсы', x: 0, z: 0, radius: 5, content: 'macbook' },
+];
+
+// === INPUT ===
+const keys = {};
+let modalOpen = false;
+let nearbyZone = null;
+let hintVisible = true;
+
+window.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeModal(); return; }
+  keys[e.key] = true;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); interact(); }
+  if (e.key === '`') document.body.classList.toggle('debug');
+  if (e.key === 'o') {
+    controls.enabled = !controls.enabled;
+    canvas.style.pointerEvents = controls.enabled ? 'auto' : 'none';
+    console.log('OrbitControls:', controls.enabled ? 'ON' : 'OFF');
+  }
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// === MODAL ===
+const modalContents = {
+  macbook: `<h2>Кейсы</h2>
+    <p>Проекты из портфолио:</p>
+    <ul class="case-list">
+      <li>FUN&SUN<span>Ускорил оформление туров и обновил бренд</span></li>
+      <li>ПрезиДЕНТ<span>Единая цифровая экосистема сети клиник</span></li>
+      <li>Лучи<span>Повышение конверсии через self-service калькуляторы</span></li>
+      <li>Nikta AI<span>AI-платформа</span></li>
+      <li>Аномалия<span>Мобильное приложение</span></li>
+      <li>Рецепт<span>Сервис рецептов</span></li>
+      <li>OneTwoTrip<span>Тревел-сервис</span></li>
+      <li>DDX Fitness<span>Фитнес-приложение</span></li>
+    </ul>`,
+};
+
+function interact() {
+  if (nearbyZone && modalContents[nearbyZone.content]) {
+    modalBody.innerHTML = modalContents[nearbyZone.content];
+    modalOverlay.classList.add('open');
+    modalOpen = true;
+  }
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  modalOpen = false;
+}
+
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+// === PROJECT 3D → SCREEN ===
+function toScreen(worldPos) {
+  const v = new THREE.Vector3(worldPos.x, worldPos.y || 1, worldPos.z);
+  v.project(camera);
+  return {
+    x: (v.x * 0.5 + 0.5) * window.innerWidth,
+    y: (-v.y * 0.5 + 0.5) * window.innerHeight
+  };
+}
+
+// === GAME LOOP ===
+function update() {
+  // Controls
+  if (!modalOpen && carModel) {
+    if (keys['ArrowUp'] || keys['w'] || keys['ц']) {
+      car.speed = Math.min(car.speed + car.acceleration, car.maxSpeed);
+    }
+    if (keys['ArrowDown'] || keys['s'] || keys['ы']) {
+      car.speed = Math.max(car.speed - car.acceleration, -car.maxSpeed * 0.5);
+    }
+    const turnFactor = Math.min(Math.abs(car.speed) / car.maxSpeed, 1);
+    if (keys['ArrowLeft'] || keys['a'] || keys['ф']) {
+      car.angle += car.turnSpeed * turnFactor;
+    }
+    if (keys['ArrowRight'] || keys['d'] || keys['в']) {
+      car.angle -= car.turnSpeed * turnFactor;
+    }
+  }
+
+  car.speed *= car.friction;
+  if (Math.abs(car.speed) < 0.0001) car.speed = 0;
+
+  const rad = car.angle * Math.PI / 180;
+  car.x += Math.sin(rad) * car.speed;
+  car.z += Math.cos(rad) * car.speed;
+
+  // Keep on desk
+  car.x = Math.max(-13, Math.min(13, car.x));
+  car.z = Math.max(-8, Math.min(8, car.z));
+
+  if (carModel) {
+    carModel.position.x = car.x;
+    carModel.position.y = 0;
+    carModel.position.z = car.z;
+    carModel.rotation.y = rad;
+  }
+
+  // Hide hint after first movement
+  if (hintVisible && Math.abs(car.speed) > 0.01) {
+    hintVisible = false;
+    setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+  }
+
+  // Proximity check
+  nearbyZone = null;
+  for (const zone of interactiveZones) {
+    const dx = car.x - zone.x;
+    const dz = car.z - zone.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < zone.radius) {
+      nearbyZone = zone;
+      break;
+    }
+  }
+
+  if (nearbyZone) {
+    const sp = toScreen({ x: nearbyZone.x, y: 2, z: nearbyZone.z });
+    tooltipText.textContent = nearbyZone.label;
+    tooltip.style.left = (sp.x - 40) + 'px';
+    tooltip.style.top = (sp.y - 60) + 'px';
+    tooltip.classList.add('visible');
+  } else {
+    tooltip.classList.remove('visible');
+  }
+
+  // Debug
+  if (document.body.classList.contains('debug')) {
+    debugInfo.textContent = `Car: (${car.x.toFixed(2)}, ${car.z.toFixed(2)}) angle=${car.angle.toFixed(0)} speed=${car.speed.toFixed(4)}`;
+  }
+
+  if (controls.enabled) controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+</body>
+</html>

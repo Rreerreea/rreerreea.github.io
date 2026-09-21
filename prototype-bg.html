@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>George — UX/UI Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    cursor: default;
+    user-select: none;
+  }
+
+  /* Desk background — fills entire screen */
+  .desk {
+    position: fixed;
+    inset: 0;
+    background: url('/desk-bg.png') center center / cover no-repeat;
+  }
+
+  /* Hitboxes */
+  .hitbox {
+    position: absolute;
+    z-index: 10;
+    border-radius: 8px;
+    transition: box-shadow 0.25s, background 0.25s;
+  }
+
+  .hitbox.highlight {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5), 0 0 24px rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .debug .hitbox {
+    border: 2px dashed rgba(255, 0, 0, 0.4);
+    background: rgba(255, 0, 0, 0.05);
+  }
+
+  /* Three.js canvas for car */
+  #car-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+    z-index: 100;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .tooltip .key-hint {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-top: 4px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(6px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 620px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    animation: modalIn 0.3s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { transform: scale(0.92) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .modal h2 { font-size: 24px; margin-bottom: 16px; color: #111; }
+  .modal p { color: #555; line-height: 1.7; margin-bottom: 10px; font-size: 15px; }
+
+  .modal-close {
+    float: right;
+    background: #f3f4f6;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-close:hover { background: #e5e7eb; }
+
+  .case-list { list-style: none; padding: 0; margin: 12px 0; }
+
+  .case-list li {
+    padding: 12px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #333;
+    font-size: 15px;
+  }
+
+  .case-list li:hover {
+    background: #f0f0ff;
+    border-color: #818cf8;
+    color: #4338ca;
+  }
+
+  .case-list li span {
+    color: #999;
+    font-size: 13px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* Hint */
+  .controls-hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 14px;
+    font-size: 13px;
+    display: flex;
+    gap: 20px;
+    z-index: 50;
+    transition: opacity 0.6s;
+    backdrop-filter: blur(8px);
+  }
+
+  .controls-hint kbd {
+    background: rgba(255,255,255,0.15);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  .name-badge {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 50;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  .name-badge strong {
+    color: #fff;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="name-badge"><strong>George</strong> — UX/UI Designer</div>
+
+<div class="desk debug" id="desk">
+  <!-- Hitboxes — positions in % so they scale with screen -->
+  <div class="hitbox" id="obj-plant" data-label="Суккулент 🌱" data-content="plant"
+       style="left: 2%; top: 2%; width: 10%; height: 24%;"></div>
+
+  <div class="hitbox" id="obj-stickers" data-label="Навыки" data-content="stickers"
+       style="left: 8%; top: 28%; width: 16%; height: 18%;"></div>
+
+  <div class="hitbox" id="obj-macbook" data-label="Кейсы" data-content="macbook"
+       style="left: 25%; top: 8%; width: 32%; height: 52%;"></div>
+
+  <div class="hitbox" id="obj-pencils" data-label="Инструменты" data-content="tools"
+       style="left: 62%; top: 3%; width: 7%; height: 22%;"></div>
+
+  <div class="hitbox" id="obj-mug" data-label="Кофе ☕" data-content="coffee"
+       style="left: 74%; top: 4%; width: 8%; height: 18%;"></div>
+
+  <div class="hitbox" id="obj-stickers2" data-label="Заметки" data-content="notes"
+       style="left: 56%; top: 38%; width: 16%; height: 14%;"></div>
+
+  <div class="hitbox" id="obj-notebook" data-label="Обо мне" data-content="about"
+       style="left: 2%; top: 52%; width: 26%; height: 44%;"></div>
+
+  <div class="hitbox" id="obj-phone" data-label="Контакты" data-content="contacts"
+       style="left: 58%; top: 52%; width: 10%; height: 28%;"></div>
+
+  <div class="hitbox" id="obj-process" data-label="Процесс" data-content="process"
+       style="left: 48%; top: 78%; width: 20%; height: 16%;"></div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    <div id="tooltip-text"></div>
+    <div class="key-hint">Пробел — открыть</div>
+  </div>
+</div>
+
+<!-- Three.js car canvas -->
+<canvas id="car-canvas"></canvas>
+
+<div class="controls-hint" id="hint">
+  <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Ехать</span>
+  <span><kbd>Пробел</kbd> Открыть</span>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Three.js -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// === DOM ===
+const desk = document.getElementById('desk');
+const tooltip = document.getElementById('tooltip');
+const tooltipText = document.getElementById('tooltip-text');
+const hint = document.getElementById('hint');
+const modalOverlay = document.getElementById('modal-overlay');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const canvas = document.getElementById('car-canvas');
+
+// === THREE.JS SETUP ===
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+
+// Camera — orthographic for consistent look
+const frustumSize = 100;
+const aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.OrthographicCamera(
+  -frustumSize * aspect / 2, frustumSize * aspect / 2,
+  frustumSize / 2, -frustumSize / 2, 0.1, 1000
+);
+camera.position.set(0, 60, 50);
+camera.lookAt(0, 0, 0);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.8);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(-20, 40, 30);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(512, 512);
+scene.add(dirLight);
+
+const fillLight = new THREE.DirectionalLight(0xffe0c0, 0.4);
+fillLight.position.set(20, 10, -10);
+scene.add(fillLight);
+
+// Shadow-receiving plane (invisible)
+const planeGeo = new THREE.PlaneGeometry(200, 200);
+const planeMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+const plane = new THREE.Mesh(planeGeo, planeMat);
+plane.rotation.x = -Math.PI / 2;
+plane.receiveShadow = true;
+scene.add(plane);
+
+// Load car model
+let carModel = null;
+const loader = new GLTFLoader();
+loader.load('/car.glb', (gltf) => {
+  const carScene = gltf.scene;
+
+  // Auto-scale to reasonable size
+  const box = new THREE.Box3().setFromObject(carScene);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 10 / maxDim;
+  carScene.scale.setScalar(scale);
+
+  // Center pivot
+  const scaledBox = new THREE.Box3().setFromObject(carScene);
+  const center = scaledBox.getCenter(new THREE.Vector3());
+  carScene.position.set(-center.x, -scaledBox.min.y, -center.z);
+
+  // Wrap in group for clean rotation
+  carModel = new THREE.Group();
+  carModel.add(carScene);
+
+  // Enable shadows
+  carModel.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  scene.add(carModel);
+}, undefined, (err) => {
+  console.error('Car model load error:', err);
+});
+
+// === CAR STATE ===
+const car = {
+  px: 75, py: 80,
+  angle: 180,
+  speed: 0,
+  maxSpeed: 0.9,
+  acceleration: 0.04,
+  friction: 0.96,
+  turnSpeed: 3.5,
+  size: 3
+};
+
+const keys = {};
+let modalOpen = false;
+
+window.addEventListener('keydown', e => {
+  if (modalOpen) {
+    if (e.key === 'Escape') closeModal();
+    return;
+  }
+  keys[e.key] = true;
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    interact();
+  }
+  if (e.key === '`') desk.classList.toggle('debug');
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+// Resize
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h);
+  const aspect = w / h;
+  camera.left = -frustumSize * aspect / 2;
+  camera.right = frustumSize * aspect / 2;
+  camera.top = frustumSize / 2;
+  camera.bottom = -frustumSize / 2;
+  camera.updateProjectionMatrix();
+});
+
+// === HITBOX LOGIC ===
+function getHitboxes() {
+  const boxes = [];
+  document.querySelectorAll('.hitbox').forEach(el => {
+    boxes.push({
+      id: el.id,
+      el: el,
+      x: el.offsetLeft,
+      y: el.offsetTop,
+      w: el.offsetWidth,
+      h: el.offsetHeight,
+      label: el.dataset.label,
+      content: el.dataset.content
+    });
+  });
+  return boxes;
+}
+
+let nearbyObj = null;
+let hintVisible = true;
+
+// Modal content
+const modalContents = {
+  macbook: `<h2>Кейсы</h2>
+    <p>Проекты из портфолио:</p>
+    <ul class="case-list">
+      <li>FUN&SUN<span>Ускорил оформление туров и обновил бренд</span></li>
+      <li>ПрезиДЕНТ<span>Единая цифровая экосистема сети клиник</span></li>
+      <li>Лучи<span>Повышение конверсии через self-service калькуляторы</span></li>
+      <li>Nikta AI<span>AI-платформа</span></li>
+      <li>Аномалия<span>Мобильное приложение</span></li>
+      <li>Рецепт<span>Сервис рецептов</span></li>
+      <li>OneTwoTrip<span>Тревел-сервис</span></li>
+      <li>DDX Fitness<span>Фитнес-приложение</span></li>
+    </ul>`,
+  about: `<h2>Обо мне</h2>
+    <p>George — UX/UI дизайнер.</p>
+    <p>Проектирую пользовательские интерфейсы, провожу исследования, строю дизайн-системы.</p>`,
+  contacts: `<h2>Контакты</h2>
+    <p>Telegram: @george</p>
+    <p>Email: george@example.com</p>`,
+  process: `<h2>Процесс работы</h2>
+    <p>Research → Wireframes → UI Design → Prototyping → Testing</p>`,
+  stickers: `<h2>Навыки</h2>
+    <p>• Figma, Sketch, Adobe XD</p>
+    <p>• User Research & Usability Testing</p>
+    <p>• Prototyping & Interaction Design</p>
+    <p>• Design Systems</p>`,
+  tools: `<h2>Инструменты</h2>
+    <p>• Figma — основной</p>
+    <p>• Miro — для воркшопов</p>
+    <p>• Notion — документация</p>`,
+  coffee: `<h2>☕ Кофе-брейк</h2>
+    <p>Спасибо что заглянул! Если хочешь обсудить проект — напиши мне.</p>`,
+  plant: `<h2>🌱</h2>
+    <p>Суккулент. Единственный коллега, который не спорит с моими дизайн-решениями.</p>`,
+  notes: `<h2>Заметки</h2>
+    <p>• Iteration — итеративный подход</p>
+    <p>• Accessibility — доступность для всех</p>`
+};
+
+function interact() {
+  if (nearbyObj && nearbyObj.content && modalContents[nearbyObj.content]) {
+    modalBody.innerHTML = modalContents[nearbyObj.content];
+    modalOverlay.classList.add('open');
+    modalOpen = true;
+  }
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  modalOpen = false;
+}
+
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+// === SCREEN % TO THREE.JS WORLD COORDS ===
+function screenPctToWorld(px, py) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const aspect = w / h;
+  const worldW = frustumSize * aspect;
+  const worldH = frustumSize;
+  const x = (px / 100 - 0.5) * worldW;
+  const z = (py / 100 - 0.5) * worldH;
+  return { x, z };
+}
+
+// === GAME LOOP ===
+function update() {
+  if (!modalOpen) {
+    if (keys['ArrowUp'] || keys['w'] || keys['ц']) {
+      car.speed = Math.min(car.speed + car.acceleration, car.maxSpeed);
+    }
+    if (keys['ArrowDown'] || keys['s'] || keys['ы']) {
+      car.speed = Math.max(car.speed - car.acceleration, -car.maxSpeed * 0.5);
+    }
+
+    const turnFactor = Math.min(Math.abs(car.speed) / car.maxSpeed, 1);
+    if (keys['ArrowLeft'] || keys['a'] || keys['ф']) {
+      car.angle -= car.turnSpeed * turnFactor;
+    }
+    if (keys['ArrowRight'] || keys['d'] || keys['в']) {
+      car.angle += car.turnSpeed * turnFactor;
+    }
+  }
+
+  car.speed *= car.friction;
+  if (Math.abs(car.speed) < 0.001) car.speed = 0;
+
+  const rad = car.angle * Math.PI / 180;
+  car.px = Math.max(2, Math.min(car.px + Math.cos(rad) * car.speed, 98));
+  car.py = Math.max(2, Math.min(car.py + Math.sin(rad) * car.speed, 98));
+
+  // Update 3D car position and rotation
+  if (carModel) {
+    const world = screenPctToWorld(car.px, car.py);
+    carModel.position.x = world.x;
+    carModel.position.z = world.z;
+    // rotation.y: negative angle + pi to face forward
+    carModel.rotation.y = -rad + Math.PI;
+  }
+
+  // Hide hint
+  if (hintVisible && Math.abs(car.speed) > 0.05) {
+    hintVisible = false;
+    setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+  }
+
+  // Proximity check (in pixels)
+  const carScreenX = (car.px / 100) * window.innerWidth;
+  const carScreenY = (car.py / 100) * window.innerHeight;
+  const hitboxes = getHitboxes();
+  nearbyObj = null;
+
+  for (const hb of hitboxes) {
+    const pad = 20;
+    if (carScreenX > hb.x - pad && carScreenX < hb.x + hb.w + pad &&
+        carScreenY > hb.y - pad && carScreenY < hb.y + hb.h + pad) {
+      nearbyObj = hb;
+      break;
+    }
+  }
+
+  document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('highlight'));
+
+  if (nearbyObj) {
+    nearbyObj.el.classList.add('highlight');
+    tooltipText.textContent = nearbyObj.label;
+    tooltip.style.left = (nearbyObj.x + nearbyObj.w / 2 - 60) + 'px';
+    tooltip.style.top = (nearbyObj.y - 50) + 'px';
+    tooltip.classList.add('visible');
+  } else {
+    tooltip.classList.remove('visible');
+  }
+
+  // Render Three.js
+  renderer.render(scene, camera);
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+</body>
+</html>

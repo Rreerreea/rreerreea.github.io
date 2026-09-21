@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BK — Зал суда Бургер-Кинг</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #C8C8CC; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12); display: flex; flex-direction: column; background: #2A1008; position: relative; }
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(135deg, #4A1A0A 0%, #6B2D14 100%); padding: 28px 20px 18px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; }
+  .hdr-left { display: flex; align-items: center; gap: 10px; }
+  .hdr-icon { font-size: 28px; }
+  .hdr-title { font-size: 18px; font-weight: 900; color: #FFC72C; }
+  .hdr-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+  .hdr-badge { background: #FF6B00; color: white; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* CARDS */
+  .card { background: rgba(255,255,255,0.07); border-radius: 18px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.06); }
+  .card-dark { background: rgba(0,0,0,0.25); }
+
+  /* ========= SCREEN 1: ДЕЛО ========= */
+  .case-badge { display: inline-block; background: #FF6B00; color: white; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
+  .case-title { font-size: 22px; font-weight: 900; color: #FFC72C; margin-bottom: 6px; line-height: 1.2; }
+  .case-num { font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 700; margin-bottom: 8px; }
+  .case-desc { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 4px; }
+
+  .evidence-label { font-size: 13px; font-weight: 800; color: #FFC72C; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .evidence-scroll { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: none; }
+  .evidence-scroll::-webkit-scrollbar { display: none; }
+  .evidence-card { min-width: 200px; background: rgba(255,107,0,0.12); border: 1px solid rgba(255,107,0,0.2); border-radius: 14px; padding: 14px; scroll-snap-align: start; flex-shrink: 0; }
+  .ev-num { font-size: 10px; color: #FF6B00; font-weight: 800; margin-bottom: 4px; }
+  .ev-title { font-size: 13px; font-weight: 800; color: white; margin-bottom: 4px; }
+  .ev-text { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.4; }
+
+  /* VOTING */
+  .vote-section { margin-top: 16px; }
+  .vote-buttons { display: flex; gap: 10px; margin-bottom: 16px; }
+  .vote-btn { flex: 1; padding: 18px 12px; border-radius: 16px; border: none; font-size: 16px; font-weight: 900; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; }
+  .vote-btn:active { transform: scale(0.96); }
+  .vote-btn.guilty { background: linear-gradient(135deg, #D32F2F, #FF6B00); color: white; font-size: 17px; }
+  .vote-btn.innocent { background: rgba(76,175,80,0.2); color: #66BB6A; border: 2px solid rgba(76,175,80,0.3); }
+  .vote-btn.voted { opacity: 0.6; pointer-events: none; }
+  .vote-btn .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: ripple-anim 0.6s ease-out; pointer-events: none; }
+  @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
+
+  .vote-result { margin-bottom: 12px; }
+  .vote-bar-wrap { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.1); margin-bottom: 6px; }
+  .vote-bar-g { background: linear-gradient(90deg, #D32F2F, #FF6B00); height: 100%; transition: width 0.8s ease; border-radius: 4px 0 0 4px; }
+  .vote-bar-i { background: #4CAF50; height: 100%; transition: width 0.8s ease; border-radius: 0 4px 4px 0; }
+  .vote-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; }
+  .vote-labels .vl-g { color: #FF6B00; }
+  .vote-labels .vl-i { color: #66BB6A; }
+  .vote-total { text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+  /* CAPITULATION */
+  .cap-section { margin-top: 4px; }
+  .cap-card { background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(255,199,44,0.1)); border: 1px solid rgba(255,107,0,0.2); border-radius: 16px; padding: 16px; }
+  .cap-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .cap-icon { font-size: 24px; }
+  .cap-title { font-size: 15px; font-weight: 900; color: #FFC72C; }
+  .cap-sub { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .cap-bar-wrap { height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; margin-bottom: 6px; position: relative; }
+  .cap-bar { height: 100%; background: linear-gradient(90deg, #FF6B00, #FFC72C); border-radius: 6px; transition: width 1s ease; position: relative; }
+  .cap-bar::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 20px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3)); border-radius: 0 6px 6px 0; animation: cap-glow 1.5s ease-in-out infinite; }
+  @keyframes cap-glow { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+  .cap-stats { display: flex; justify-content: space-between; font-size: 12px; }
+  .cap-stats span { color: rgba(255,255,255,0.5); }
+  .cap-stats b { color: #FFC72C; }
+  .cap-reward { display: flex; align-items: center; gap: 8px; margin-top: 10px; background: rgba(255,199,44,0.1); border-radius: 10px; padding: 10px 12px; }
+  .cap-reward-icon { font-size: 22px; }
+  .cap-reward-text { font-size: 13px; font-weight: 800; color: #FFC72C; }
+  .cap-reward-sub { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+  /* ========= SCREEN 2: ВЕРДИКТЫ ========= */
+  .verdict-card { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: transform 0.12s; }
+  .verdict-card:active { transform: scale(0.98); }
+  .verdict-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .verdict-name { font-size: 14px; font-weight: 800; color: white; flex: 1; margin-right: 8px; }
+  .verdict-badge { font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
+  .vb-guilty { background: rgba(255,107,0,0.2); color: #FF6B00; }
+  .vb-innocent { background: rgba(76,175,80,0.2); color: #66BB6A; }
+  .vb-progress { background: rgba(255,199,44,0.2); color: #FFC72C; }
+  .verdict-percent { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+  .verdict-reward { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.4); }
+  .verdict-reward span { color: #FFC72C; font-weight: 700; }
+  .verdict-mini-bar { height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,0.08); margin-top: 6px; }
+  .vmb-fill { height: 100%; border-radius: 2px; }
+
+  /* ========= SCREEN 3: КУПОНЫ ========= */
+  .coupon-card { background: rgba(255,255,255,0.07); border-radius: 16px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; }
+  .coupon-card.locked { opacity: 0.5; }
+  .coupon-card.locked::after { content: '🔒'; position: absolute; top: 14px; right: 14px; font-size: 18px; }
+  .coupon-tag { display: inline-block; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 8px; margin-bottom: 8px; }
+  .ct-active { background: rgba(76,175,80,0.2); color: #66BB6A; }
+  .ct-used { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+  .ct-locked { background: rgba(255,199,44,0.15); color: #FFC72C; }
+  .coupon-name { font-size: 15px; font-weight: 800; color: white; margin-bottom: 4px; }
+  .coupon-desc { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+  .coupon-code { display: inline-block; background: rgba(255,107,0,0.15); border: 1px dashed rgba(255,107,0,0.3); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 800; color: #FF6B00; letter-spacing: 1px; }
+  .coupon-expires { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; }
+  .coupon-progress { margin-top: 8px; }
+  .coupon-progress .cap-bar-wrap { height: 8px; margin-bottom: 4px; }
+  .coupon-progress-text { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  /* ========= SCREEN 4: ПРОФИЛЬ ========= */
+  .prof-card { background: rgba(255,255,255,0.07); border-radius: 20px; padding: 24px 20px; text-align: center; margin-bottom: 12px; }
+  .prof-ava { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #FF6B00, #FFC72C); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; box-shadow: 0 4px 20px rgba(255,107,0,0.3); }
+  .prof-name { font-size: 20px; font-weight: 900; color: white; }
+  .prof-rank { font-size: 13px; color: #FFC72C; font-weight: 700; margin-top: 4px; }
+  .prof-rank-badge { display: inline-block; background: rgba(255,199,44,0.15); border: 1px solid rgba(255,199,44,0.2); border-radius: 20px; padding: 4px 14px; margin-top: 8px; font-size: 12px; font-weight: 800; color: #FFC72C; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .ps { text-align: center; border-right: 1px solid rgba(255,255,255,0.08); }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 22px; font-weight: 900; color: #FF6B00; }
+  .ps-l { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .prof-menu { background: rgba(255,255,255,0.07); border-radius: 18px; overflow: hidden; }
+  .pm-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.12s; }
+  .pm-item:last-child { border-bottom: none; }
+  .pm-item:active { background: rgba(255,255,255,0.05); }
+  .pm-icon { font-size: 20px; }
+  .pm-text { flex: 1; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .pm-arrow { font-size: 14px; color: rgba(255,255,255,0.2); }
+
+  /* BOTTOM NAV */
+  .bnav { background: rgba(42,16,8,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: space-around; padding: 8px 0 20px; flex-shrink: 0; border-top: 0.5px solid rgba(255,255,255,0.08); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 8px; transition: all 0.15s; }
+  .bn .i { font-size: 22px; opacity: 0.35; transition: all 0.15s; }
+  .bn .l { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); transition: all 0.15s; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #FF6B00; font-weight: 700; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 100px; left: 16px; right: 16px; background: linear-gradient(135deg, #FF6B00, #FFC72C); color: #2A1008; padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 800; text-align: center; z-index: 100; opacity: 0; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* GAVEL ANIMATION */
+  .gavel-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .gavel-overlay.show { opacity: 1; }
+  .gavel-anim { font-size: 80px; animation: gavel-slam 0.6s ease-out; }
+  @keyframes gavel-slam {
+    0% { transform: rotate(-45deg) scale(0.5); opacity: 0; }
+    40% { transform: rotate(10deg) scale(1.3); opacity: 1; }
+    60% { transform: rotate(-5deg) scale(1); }
+    100% { transform: rotate(0deg) scale(1); opacity: 1; }
+  }
+
+  /* VOTED STATE */
+  .voted-state { text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 14px; margin-bottom: 16px; }
+  .voted-state .check { font-size: 32px; margin-bottom: 6px; }
+  .voted-state .msg { font-size: 15px; font-weight: 800; color: white; }
+  .voted-state .sub { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  /* SECTION LABEL */
+  .sec-label { font-size: 18px; font-weight: 900; color: white; margin-bottom: 12px; }
+  .sec-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #2A1008; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+    .toast { bottom: 100px; }
+  }
+  @media (max-width: 375px) {
+    .case-title { font-size: 19px; }
+    .vote-btn { padding: 14px 10px; font-size: 14px; }
+    .screen { padding: 12px; }
+    .evidence-card { min-width: 170px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- HEADER -->
+  <div class="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-left">
+        <span class="hdr-icon">⚖️</span>
+        <div>
+          <div class="hdr-title">Зал суда BK</div>
+          <div class="hdr-sub">Народный трибунал</div>
+        </div>
+      </div>
+      <div class="hdr-badge">Сезон 1</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SCREEN 1: ДЕЛО -->
+    <div class="screen active" id="s-case">
+      <div class="card">
+        <div class="case-badge">🔥 СЛУШАЕТСЯ СЕЙЧАС</div>
+        <div class="case-num">Дело №1 · Открыто 24.02.2026</div>
+        <div class="case-title">Дело о тарелочнице</div>
+        <div class="case-desc">
+          Женщина пришла в Бургер Кинг с собственной фарфоровой тарелкой и потребовала, чтобы Воппер подавали на ней. Когда кассир отказал, она устроила скандал на весь ресторан и написала жалобу в Роспотребнадзор. Бургер Кинг теперь обвиняется в «нарушении прав потребителя на эстетичную подачу».
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="evidence-label">📁 Материалы дела</div>
+        <div class="evidence-scroll">
+          <div class="evidence-card">
+            <div class="ev-num">Улика №1</div>
+            <div class="ev-title">Фото тарелки</div>
+            <div class="ev-text">Фарфоровая тарелка с золотой каймой, предположительно принесённая ответчицей. На тарелке следы кетчупа.</div>
+          </div>
+          <div class="evidence-card">
+            <div class="ev-num">Улика №2</div>
+            <div class="ev-title">Показания кассира</div>
+            <div class="ev-text">«Она сказала, что бумажная обёртка — это неуважение к еде. Я предложил салфетку, но ситуация вышла из-под контроля.»</div>
+          </div>
+          <div class="evidence-card">
+            <div class="ev-num">Улика №3</div>
+            <div class="ev-title">Жалоба в РПН</div>
+            <div class="ev-text">«Требую обязать заведение подавать бургеры на нормальной посуде. Это ресторан или забегаловка?!»</div>
+          </div>
+          <div class="evidence-card">
+            <div class="ev-num">Улика №4</div>
+            <div class="ev-title">Ответ BK</div>
+            <div class="ev-text">«Мы уважаем выбор каждого гостя, но наш формат предполагает подачу в фирменной упаковке. Тарелку вернули.»</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VOTING -->
+      <div class="vote-section" id="vote-section">
+        <div class="vote-buttons" id="vote-buttons">
+          <button class="vote-btn guilty" id="btn-guilty" onclick="vote('guilty')">🔨 ВИНОВЕН</button>
+          <button class="vote-btn innocent" id="btn-innocent" onclick="vote('innocent')">✅ ОПРАВДАН</button>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="vote-result">
+        <div class="vote-bar-wrap">
+          <div class="vote-bar-g" id="bar-g" style="width: 73%"></div>
+          <div class="vote-bar-i" id="bar-i" style="width: 27%"></div>
+        </div>
+        <div class="vote-labels">
+          <span class="vl-g" id="lbl-g">🔨 73% Виновен</span>
+          <span class="vl-i" id="lbl-i">✅ 27% Оправдан</span>
+        </div>
+        <div class="vote-total" id="vote-total">142 857 голосов</div>
+      </div>
+
+      <!-- CAPITULATION -->
+      <div class="cap-section">
+        <div class="cap-card">
+          <div class="cap-header">
+            <span class="cap-icon">🏳️</span>
+            <div>
+              <div class="cap-title">День капитуляции</div>
+              <div class="cap-sub">Когда «Виновен» наберёт 200К — Воппер за 1₽</div>
+            </div>
+          </div>
+          <div class="cap-bar-wrap">
+            <div class="cap-bar" id="cap-bar" style="width: 72%"></div>
+          </div>
+          <div class="cap-stats">
+            <span>Голосов «Виновен»: <b id="cap-current">143 857</b></span>
+            <span>Цель: <b>200 000</b></span>
+          </div>
+          <div class="cap-reward">
+            <span class="cap-reward-icon">🍔</span>
+            <div>
+              <div class="cap-reward-text">Воппер за 1₽ для всех!</div>
+              <div class="cap-reward-sub">Осталось ~56 000 голосов</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: ВЕРДИКТЫ -->
+    <div class="screen" id="s-verdicts">
+      <div class="sec-label">Архив дел</div>
+      <div class="sec-sub">Все рассмотренные и текущие дела</div>
+
+      <div class="verdict-card">
+        <div class="verdict-top">
+          <div class="verdict-name">Дело о среднем пальце из наггетсов</div>
+          <div class="verdict-badge vb-guilty">ВИНОВЕН</div>
+        </div>
+        <div class="verdict-percent">89% Виновен · 11% Оправдан · 98 432 голоса</div>
+        <div class="verdict-reward">Награда: <span>Кофе за 1₽ + 100 баллов</span></div>
+        <div class="verdict-mini-bar">
+          <div class="vmb-fill" style="width: 89%; background: linear-gradient(90deg, #D32F2F, #FF6B00);"></div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-top">
+          <div class="verdict-name">Дело о слишком честной рекламе</div>
+          <div class="verdict-badge vb-innocent">ОПРАВДАН</div>
+        </div>
+        <div class="verdict-percent">48% Виновен · 52% Оправдан · 76 291 голос</div>
+        <div class="verdict-reward">Награда: <span>50 баллов</span></div>
+        <div class="verdict-mini-bar">
+          <div class="vmb-fill" style="width: 48%; background: linear-gradient(90deg, #D32F2F, #FF6B00);"></div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-top">
+          <div class="verdict-name">Дело о тарелочнице</div>
+          <div class="verdict-badge vb-progress">В ПРОЦЕССЕ</div>
+        </div>
+        <div class="verdict-percent">73% Виновен · 27% Оправдан · 142 857 голосов</div>
+        <div class="verdict-reward">Награда: <span>Голосование открыто</span></div>
+        <div class="verdict-mini-bar">
+          <div class="vmb-fill" style="width: 73%; background: linear-gradient(90deg, #FF6B00, #FFC72C);"></div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-top">
+          <div class="verdict-name">Дело о пропавшем корнишоне</div>
+          <div class="verdict-badge vb-guilty">ВИНОВЕН</div>
+        </div>
+        <div class="verdict-percent">94% Виновен · 6% Оправдан · 203 119 голосов</div>
+        <div class="verdict-reward">Награда: <span>Воппер за 1₽ (День капитуляции!)</span></div>
+        <div class="verdict-mini-bar">
+          <div class="vmb-fill" style="width: 94%; background: linear-gradient(90deg, #D32F2F, #FF6B00);"></div>
+        </div>
+      </div>
+
+      <div class="verdict-card" style="opacity:0.5;">
+        <div class="verdict-top">
+          <div class="verdict-name">Дело о ???</div>
+          <div class="verdict-badge vb-progress" style="opacity:0.4;">СКОРО</div>
+        </div>
+        <div class="verdict-percent" style="opacity:0.4;">Следующее дело откроется после вердикта</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: КУПОНЫ -->
+    <div class="screen" id="s-coupons">
+      <div class="sec-label">Мои купоны</div>
+      <div class="sec-sub">Награды за участие в процессах</div>
+
+      <div class="coupon-card">
+        <div class="coupon-tag ct-active">АКТИВЕН</div>
+        <div class="coupon-name">Кофе за 1₽</div>
+        <div class="coupon-desc">За голос «Виновен» в деле о тарелочнице</div>
+        <div class="coupon-code">BK-COURT-7742</div>
+        <div class="coupon-expires">Действует до 15.03.2026</div>
+      </div>
+
+      <div class="coupon-card">
+        <div class="coupon-tag ct-active">АКТИВЕН</div>
+        <div class="coupon-name">50 бонусных баллов</div>
+        <div class="coupon-desc">За голос «Оправдан» в деле о честной рекламе</div>
+        <div class="coupon-code">BK-JURY-3318</div>
+        <div class="coupon-expires">Действует до 10.03.2026</div>
+      </div>
+
+      <div class="coupon-card">
+        <div class="coupon-tag ct-active">АКТИВЕН</div>
+        <div class="coupon-name">Кофе за 1₽ + 100 баллов</div>
+        <div class="coupon-desc">За голос «Виновен» в деле о наггетсах</div>
+        <div class="coupon-code">BK-NGTFNGER-0189</div>
+        <div class="coupon-expires">Действует до 05.03.2026</div>
+      </div>
+
+      <div class="coupon-card locked">
+        <div class="coupon-tag ct-locked">ЗАБЛОКИРОВАН</div>
+        <div class="coupon-name">Воппер за 1₽</div>
+        <div class="coupon-desc">День капитуляции — когда «Виновен» наберёт 200К</div>
+        <div class="coupon-progress">
+          <div class="cap-bar-wrap">
+            <div class="cap-bar" style="width: 72%"></div>
+          </div>
+          <div class="coupon-progress-text">143 857 / 200 000 голосов</div>
+        </div>
+      </div>
+
+      <div class="coupon-card" style="opacity: 0.4;">
+        <div class="coupon-tag ct-used">ИСПОЛЬЗОВАН</div>
+        <div class="coupon-name">Картошка фри бесплатно</div>
+        <div class="coupon-desc">За регистрацию в Зале суда</div>
+        <div class="coupon-code" style="opacity: 0.4; text-decoration: line-through;">BK-WELCOME-0001</div>
+        <div class="coupon-expires">Использован 20.02.2026</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 4: ПРОФИЛЬ -->
+    <div class="screen" id="s-profile">
+      <div class="prof-card">
+        <div class="prof-ava">⚖️</div>
+        <div class="prof-name">Алексей М.</div>
+        <div class="prof-rank">Присяжный заседатель</div>
+        <div class="prof-rank-badge">🏛️ Уровень: Старший присяжный</div>
+        <div class="prof-stats">
+          <div class="ps">
+            <div class="ps-n">4</div>
+            <div class="ps-l">Дел</div>
+          </div>
+          <div class="ps">
+            <div class="ps-n">12</div>
+            <div class="ps-l">Голосов</div>
+          </div>
+          <div class="ps">
+            <div class="ps-n">3</div>
+            <div class="ps-l">Купона</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;color:white;margin-bottom:12px;">Статистика</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:13px;color:rgba(255,255,255,0.5);">Голосов «Виновен»</span>
+          <span style="font-size:13px;font-weight:800;color:#FF6B00;">9</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:13px;color:rgba(255,255,255,0.5);">Голосов «Оправдан»</span>
+          <span style="font-size:13px;font-weight:800;color:#66BB6A;">3</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:13px;color:rgba(255,255,255,0.5);">Точность (совпал с вердиктом)</span>
+          <span style="font-size:13px;font-weight:800;color:#FFC72C;">75%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;">
+          <span style="font-size:13px;color:rgba(255,255,255,0.5);">Дней в суде подряд</span>
+          <span style="font-size:13px;font-weight:800;color:#FFC72C;">🔥 3</span>
+        </div>
+      </div>
+
+      <div class="prof-menu">
+        <div class="pm-item">
+          <span class="pm-icon">📜</span>
+          <span class="pm-text">История голосований</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">🏆</span>
+          <span class="pm-text">Достижения</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">🔔</span>
+          <span class="pm-text">Уведомления</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">⚙️</span>
+          <span class="pm-text">Настройки</span>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-item">
+          <span class="pm-icon">❓</span>
+          <span class="pm-text">Правила суда</span>
+          <span class="pm-arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- GAVEL OVERLAY -->
+  <div class="gavel-overlay" id="gavel-overlay">
+    <div class="gavel-anim" id="gavel-anim">🔨</div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn on" onclick="go('s-case',this)">
+      <span class="i">⚖️</span>
+      <span class="l">Дело</span>
+    </div>
+    <div class="bn" onclick="go('s-verdicts',this)">
+      <span class="i">📋</span>
+      <span class="l">Вердикты</span>
+    </div>
+    <div class="bn" onclick="go('s-coupons',this)">
+      <span class="i">🎟️</span>
+      <span class="l">Купоны</span>
+    </div>
+    <div class="bn" onclick="go('s-profile',this)">
+      <span class="i">👤</span>
+      <span class="l">Профиль</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Navigation
+  function go(id, el) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+    el.classList.add('on');
+  }
+
+  // State
+  let hasVoted = false;
+  let guiltyPct = 73;
+  let innocentPct = 27;
+  let totalVotes = 142857;
+  let guiltyVotes = 143857; // for capitulation
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Gavel animation
+  function showGavel() {
+    const overlay = document.getElementById('gavel-overlay');
+    const anim = document.getElementById('gavel-anim');
+    overlay.classList.add('show');
+    // Reset animation
+    anim.style.animation = 'none';
+    anim.offsetHeight; // trigger reflow
+    anim.style.animation = 'gavel-slam 0.6s ease-out';
+    setTimeout(() => {
+      overlay.classList.remove('show');
+    }, 1000);
+  }
+
+  // Vote
+  function vote(type) {
+    if (hasVoted) return;
+    hasVoted = true;
+
+    // Show gavel
+    showGavel();
+
+    // Update numbers
+    totalVotes++;
+    if (type === 'guilty') {
+      guiltyVotes++;
+      guiltyPct = Math.min(99, guiltyPct + 0.01);
+      innocentPct = 100 - guiltyPct;
+    } else {
+      innocentPct = Math.min(99, innocentPct + 0.01);
+      guiltyPct = 100 - innocentPct;
+    }
+
+    // Animate bars
+    setTimeout(() => {
+      document.getElementById('bar-g').style.width = guiltyPct.toFixed(0) + '%';
+      document.getElementById('bar-i').style.width = innocentPct.toFixed(0) + '%';
+      document.getElementById('lbl-g').textContent = '🔨 ' + guiltyPct.toFixed(0) + '% Виновен';
+      document.getElementById('lbl-i').textContent = '✅ ' + innocentPct.toFixed(0) + '% Оправдан';
+      document.getElementById('vote-total').textContent = totalVotes.toLocaleString('ru-RU') + ' голосов';
+
+      // Capitulation bar
+      const capPct = Math.min(100, ((guiltyVotes + (type === 'guilty' ? 1 : 0)) / 200000) * 100);
+      document.getElementById('cap-bar').style.width = capPct.toFixed(1) + '%';
+      document.getElementById('cap-current').textContent = (guiltyVotes).toLocaleString('ru-RU');
+    }, 300);
+
+    // Replace buttons with voted state
+    setTimeout(() => {
+      const voteSection = document.getElementById('vote-section');
+      const label = type === 'guilty' ? 'ВИНОВЕН' : 'ОПРАВДАН';
+      const emoji = type === 'guilty' ? '🔨' : '✅';
+      voteSection.innerHTML = `
+        <div class="voted-state">
+          <div class="check">${emoji}</div>
+          <div class="msg">Вы проголосовали: ${label} ✓</div>
+          <div class="sub">Ваш голос учтён в общем подсчёте</div>
+        </div>
+      `;
+    }, 1200);
+
+    // Toast
+    setTimeout(() => {
+      if (type === 'guilty') {
+        showToast('🎟️ Голос принят! +Купон на кофе за 1₽');
+      } else {
+        showToast('✅ Голос принят! +50 бонусных баллов');
+      }
+    }, 1400);
+  }
+
+  // Animate vote counter on load
+  function animateCounter(el, target, suffix) {
+    let current = 0;
+    const step = Math.ceil(target / 60);
+    const interval = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current.toLocaleString('ru-RU') + suffix;
+      if (current >= target) clearInterval(interval);
+    }, 16);
+  }
+
+  // Init animation
+  setTimeout(() => {
+    animateCounter(document.getElementById('vote-total'), 142857, ' голосов');
+  }, 300);
+</script>
+
+</body>
+</html>

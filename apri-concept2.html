@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АПРИ — Построй свой квартал</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #C8C8CC; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12); display: flex; flex-direction: column; background: #0A1628; position: relative; }
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(180deg, #0A1628 0%, #112240 100%); padding: 28px 20px 24px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; }
+  .hdr-logo { display: flex; align-items: center; gap: 10px; }
+  .hdr-logo-icon { width: 38px; height: 38px; background: linear-gradient(135deg, #34D399, #059669); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(52,211,153,0.3); }
+  .hdr-logo b { font-size: 17px; font-weight: 800; color: white; }
+  .hdr-logo span { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 1px; }
+  .hdr-actions { display: flex; gap: 10px; }
+  .hdr-btn { width: 36px; height: 36px; background: rgba(255,255,255,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.08); }
+  .hdr-badge { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #F43F5E; border-radius: 50%; font-size: 9px; font-weight: 800; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid #0A1628; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; background: linear-gradient(180deg, #112240 0%, #0A1628 3%, #F0F4F8 3.1%); }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  #s-support { display: none; flex-direction: column; }
+  #s-support.active { display: flex; }
+  .ci { padding: 12px 16px; }
+
+  /* CARDS */
+  .wc { background: white; border-radius: 20px; padding: 18px; margin-bottom: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .wc-title { font-size: 17px; font-weight: 800; color: #1A1A2E; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .wc-link { font-size: 12px; color: #059669; font-weight: 700; cursor: pointer; }
+
+  /* ═══ 3D ISOMETRIC MAP ═══ */
+  .map-wrap { perspective: 600px; border-radius: 20px; overflow: hidden; margin-bottom: 10px; position: relative; }
+  .map-ground { background: linear-gradient(180deg, #1a5c2e 0%, #15482a 40%, #0f3520 100%); padding: 16px 12px 28px; position: relative; }
+  .map-ground::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(52,211,153,0.1) 0%, transparent 60%); pointer-events: none; }
+  .map-ground::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='0.8' fill='rgba(255,255,255,0.025)'/%3E%3C/svg%3E") repeat; pointer-events: none; }
+  .map-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; position: relative; z-index: 2; }
+  .map-hdr b { font-size: 14px; font-weight: 800; color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+  .map-hdr span { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 600; }
+
+  .iso-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; transform: rotateX(50deg); transform-origin: center 95%; position: relative; z-index: 1; padding: 4px 2px 16px; }
+
+  .cell { aspect-ratio: 1; border-radius: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s, opacity 0.3s; }
+  .cell-emoji { font-size: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); line-height: 1; }
+  .cell-lbl { font-size: 7px; font-weight: 700; margin-top: 2px; letter-spacing: 0.3px; }
+
+  /* Empty cell — tappable grass */
+  .cell.empty { background: rgba(255,255,255,0.04); border: 2px dashed rgba(255,255,255,0.18); }
+  .cell.empty .cell-emoji { font-size: 18px; opacity: 0.5; animation: cellPulse 2.5s ease-in-out infinite; }
+  .cell.empty .cell-lbl { color: rgba(255,255,255,0.3); }
+  .cell.empty:active { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.5); }
+  @keyframes cellPulse { 0%,100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.65; transform: scale(1.15); } }
+
+  /* Built — small objects (bench, lamp, flower) */
+  .cell.sm { background: linear-gradient(180deg, #fff, #e8f5e9); border: 1px solid rgba(255,255,255,0.7); transform: translateY(-10px); box-shadow: 0 1px 0 0 #A5D6A7, 0 2px 0 0 #81C784, 0 3px 0 0 #66BB6A, 0 4px 0 0 #4CAF50, 0 5px 0 0 #43A047, 0 6px 0 0 #388E3C, 0 7px 0 0 #2E7D32, 0 8px 0 0 #2E7D32, 0 9px 0 0 #1B5E20, 0 10px 0 0 #1B5E20, 0 14px 14px rgba(0,0,0,0.25); }
+  .cell.sm .cell-lbl { color: #1B5E20; }
+
+  /* Built — medium objects (tree, playground, cafe) */
+  .cell.med { background: linear-gradient(180deg, #fff, #e0f2e0); border: 1px solid rgba(255,255,255,0.7); transform: translateY(-16px); box-shadow: 0 1px 0 0 #C8E6C9, 0 2px 0 0 #A5D6A7, 0 3px 0 0 #81C784, 0 4px 0 0 #66BB6A, 0 5px 0 0 #4CAF50, 0 6px 0 0 #43A047, 0 7px 0 0 #388E3C, 0 8px 0 0 #388E3C, 0 9px 0 0 #2E7D32, 0 10px 0 0 #2E7D32, 0 11px 0 0 #1B5E20, 0 12px 0 0 #1B5E20, 0 13px 0 0 #1B5E20, 0 14px 0 0 #154C17, 0 15px 0 0 #154C17, 0 16px 0 0 #0D3B10, 0 20px 16px rgba(0,0,0,0.3); }
+  .cell.med .cell-emoji { font-size: 25px; }
+  .cell.med .cell-lbl { color: #1B5E20; }
+
+  /* Built — tall buildings (houses) */
+  .cell.tall { background: linear-gradient(180deg, #fff, #dcedc8); border: 1px solid rgba(255,255,255,0.7); transform: translateY(-22px); box-shadow: 0 1px 0 0 #DCEDC8, 0 2px 0 0 #C8E6C9, 0 3px 0 0 #A5D6A7, 0 4px 0 0 #81C784, 0 5px 0 0 #66BB6A, 0 6px 0 0 #4CAF50, 0 7px 0 0 #43A047, 0 8px 0 0 #43A047, 0 9px 0 0 #388E3C, 0 10px 0 0 #388E3C, 0 11px 0 0 #2E7D32, 0 12px 0 0 #2E7D32, 0 13px 0 0 #1B5E20, 0 14px 0 0 #1B5E20, 0 15px 0 0 #1B5E20, 0 16px 0 0 #154C17, 0 17px 0 0 #154C17, 0 18px 0 0 #0D3B10, 0 19px 0 0 #0D3B10, 0 20px 0 0 #0D3B10, 0 21px 0 0 #092E0B, 0 22px 0 0 #092E0B, 0 26px 20px rgba(0,0,0,0.35); }
+  .cell.tall .cell-emoji { font-size: 28px; }
+  .cell.tall .cell-lbl { color: #1B5E20; }
+
+  /* Build animation */
+  @keyframes buildPop { from { transform: scale(0) translateY(0); opacity: 0; } }
+  .cell.anim { animation: buildPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+  /* Progress bar */
+  .map-prog { display: flex; align-items: center; gap: 10px; margin-top: 10px; position: relative; z-index: 2; }
+  .map-pbar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .map-pfill { height: 100%; background: linear-gradient(90deg, #34D399, #10B981); border-radius: 3px; transition: width 0.5s; box-shadow: 0 0 8px rgba(52,211,153,0.4); }
+  .map-plbl { font-size: 12px; font-weight: 800; color: #34D399; min-width: 32px; text-align: right; }
+
+  /* BUILD MODAL */
+  .bm { position: absolute; inset: 0; z-index: 50; display: none; }
+  .bm.open { display: block; }
+  .bm-ov { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fadeIn 0.2s; }
+  .bm-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 24px 24px 0 0; padding: 12px 18px 28px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+  .bm.open .bm-sheet { transform: translateY(0); }
+  .bm-handle { width: 36px; height: 4px; background: #D1D5DB; border-radius: 2px; margin: 0 auto 14px; }
+  .bm-title { font-size: 17px; font-weight: 800; color: #1A1A2E; margin-bottom: 14px; }
+  .bm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .bm-item { text-align: center; padding: 14px 6px 10px; background: #F0FAF4; border-radius: 16px; cursor: pointer; transition: transform 0.12s, background 0.12s; border: 2px solid transparent; }
+  .bm-item:active { transform: scale(0.94); background: #D1FAE5; border-color: #34D399; }
+  .bm-item-emoji { font-size: 30px; line-height: 1.2; }
+  .bm-item-name { font-size: 11px; font-weight: 700; color: #1A1A2E; margin-top: 4px; }
+  .bm-item-cost { font-size: 10px; font-weight: 700; color: #059669; margin-top: 2px; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* STATS ROW */
+  .stat-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-card { flex: 1; background: white; border-radius: 16px; padding: 14px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .stat-num { font-size: 24px; font-weight: 900; color: #1A1A2E; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: #8E8E93; margin-top: 4px; font-weight: 600; }
+
+  /* BUILD LIST */
+  .build-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F0F4F8; cursor: pointer; transition: background 0.15s; }
+  .build-item:last-child { border-bottom: none; }
+  .build-item:active { background: #F8FAFC; margin: 0 -18px; padding: 12px 18px; border-radius: 12px; }
+  .build-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .build-info { flex: 1; min-width: 0; }
+  .build-name { font-size: 15px; font-weight: 700; color: #1A1A2E; }
+  .build-desc { font-size: 12px; color: #8E8E93; margin-top: 2px; }
+  .build-cost { font-size: 14px; font-weight: 800; color: #059669; flex-shrink: 0; background: #ECFDF5; padding: 4px 10px; border-radius: 8px; }
+
+  /* INVITE BLOCK */
+  .invite-block { background: linear-gradient(135deg, #112240 0%, #0A1628 100%); border-radius: 20px; padding: 18px; margin-bottom: 10px; color: white; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+  .invite-title { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+  .invite-desc { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 14px; line-height: 1.5; }
+  .invite-code { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; cursor: pointer; }
+  .invite-code span { flex: 1; font-size: 17px; font-weight: 800; letter-spacing: 2px; }
+  .invite-code em { font-size: 12px; font-style: normal; color: rgba(255,255,255,0.4); }
+  .invite-share { display: flex; gap: 8px; }
+  .share-btn { flex: 1; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 0.12s; }
+  .share-btn:active { transform: scale(0.96); }
+  .sh-wa { background: #25D366; color: white; }
+  .sh-tg { background: #0088CC; color: white; }
+  .sh-lnk { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.1); }
+
+  /* FRIEND CARDS */
+  .friend-card { background: #F8FAFC; border-radius: 16px; padding: 14px; margin-bottom: 8px; transition: transform 0.12s; }
+  .friend-card:active { transform: scale(0.98); }
+  .friend-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .friend-ava { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: white; flex-shrink: 0; }
+  .friend-info { flex: 1; min-width: 0; }
+  .friend-name { font-size: 14px; font-weight: 700; color: #1A1A2E; }
+  .friend-status { font-size: 11px; color: #8E8E93; margin-top: 1px; }
+  .friend-built { font-size: 13px; font-weight: 800; color: #059669; flex-shrink: 0; }
+  .friend-objects { display: flex; gap: 6px; flex-wrap: wrap; }
+  .friend-obj { font-size: 20px; background: white; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+  /* LEADERBOARD */
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F0F4F8; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { width: 30px; text-align: center; font-size: 16px; font-weight: 900; color: #8E8E93; flex-shrink: 0; }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name { font-size: 14px; font-weight: 700; color: #1A1A2E; }
+  .lb-sub { font-size: 11px; color: #8E8E93; margin-top: 1px; }
+  .lb-score { font-size: 14px; font-weight: 800; color: #059669; flex-shrink: 0; background: #ECFDF5; padding: 3px 8px; border-radius: 8px; }
+  .lb-you { background: linear-gradient(135deg, #ECFDF5, #E0F2FE); margin: 0 -18px; padding: 12px 18px; border-radius: 14px; border: 1px solid #34D399; }
+
+  /* COLLECTIVE GOAL */
+  .goal-banner { background: linear-gradient(135deg, #059669, #047857); border-radius: 20px; padding: 18px; margin-bottom: 10px; color: white; box-shadow: 0 4px 16px rgba(5,150,105,0.2); }
+  .goal-title { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+  .goal-desc { font-size: 12px; opacity: 0.8; margin-bottom: 14px; line-height: 1.5; }
+  .goal-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .goal-fill { height: 100%; background: white; border-radius: 4px; box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  .goal-stats { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+
+  /* PROFILE */
+  .prof-hero { background: white; border-radius: 20px; padding: 24px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .prof-ava { width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, #059669, #34D399); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; color: white; margin: 0 auto 12px; box-shadow: 0 4px 16px rgba(5,150,105,0.25); }
+  .prof-name { font-size: 20px; font-weight: 800; color: #1A1A2E; }
+  .prof-sub { font-size: 13px; color: #8E8E93; margin-top: 3px; }
+  .prof-badge { display: inline-block; font-size: 12px; font-weight: 700; color: #059669; background: #ECFDF5; padding: 4px 12px; border-radius: 10px; margin-top: 8px; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 16px; border-top: 1px solid #F0F4F8; padding-top: 14px; }
+  .ps { text-align: center; border-right: 1px solid #F0F4F8; }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 22px; font-weight: 900; color: #1A1A2E; }
+  .ps-l { font-size: 10px; color: #8E8E93; margin-top: 2px; }
+  .prof-actions { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .pact { display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #F0F4F8; cursor: pointer; }
+  .pact:last-child { border-bottom: none; }
+  .pact:active { background: #F8FAFC; }
+  .pact-i { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .pact-l { flex: 1; font-size: 15px; font-weight: 600; color: #1A1A2E; }
+  .pact-a { color: #C7C7CC; font-size: 16px; }
+  .pact.danger .pact-l { color: #F43F5E; }
+
+  /* BOTTOM NAV */
+  .bnav { background: #0A1628; display: flex; align-items: center; justify-content: space-around; padding: 8px 0 20px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 8px; }
+  .bn .i { font-size: 22px; opacity: 0.3; }
+  .bn .l { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #34D399; font-weight: 700; }
+  .home-ind { background: #0A1628; display: flex; justify-content: center; padding: 4px 0 6px; flex-shrink: 0; }
+  .home-bar { width: 130px; height: 5px; background: white; border-radius: 3px; opacity: 0.15; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(5,150,105,0.95); color: white; padding: 10px 20px; border-radius: 22px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .fade { opacity: 0; transform: translateY(8px); animation: fu .4s ease forwards; }
+  @keyframes fu { to { opacity: 1; transform: none; } }
+
+  /* SUPPORT CHAT */
+  .ch-head { background: white; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0F4F8; flex-shrink: 0; position: sticky; top: 0; z-index: 5; }
+  .ch-ava { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #059669, #34D399); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .ch-info b { display: block; font-size: 14px; font-weight: 700; color: #1A1A2E; }
+  .ch-info span { font-size: 11px; color: #10B981; }
+  .ch-msgs { flex: 1; overflow-y: auto; padding: 12px 16px; scrollbar-width: none; display: flex; flex-direction: column; gap: 8px; }
+  .ch-msgs::-webkit-scrollbar { display: none; }
+  .cm { max-width: 76%; }
+  .cm.ag { align-self: flex-start; }
+  .cm.me { align-self: flex-end; }
+  .cm-t { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
+  .cm.ag .cm-t { background: #F0F4F8; color: #1A1A2E; border-radius: 4px 18px 18px 18px; }
+  .cm.me .cm-t { background: #059669; color: white; border-radius: 18px 4px 18px 18px; }
+  .cm-d { font-size: 10px; color: #8E8E93; margin-top: 3px; }
+  .cm.me .cm-d { text-align: right; }
+  .ch-qr { padding: 8px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .ch-qr::-webkit-scrollbar { display: none; }
+  .qr { padding: 8px 14px; background: #ECFDF5; color: #059669; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+  .ch-inp { padding: 8px 16px 12px; background: white; display: flex; gap: 10px; align-items: center; flex-shrink: 0; border-top: 1px solid #F0F4F8; }
+  .ch-inp input { flex: 1; border: 1px solid #E2E8F0; border-radius: 22px; padding: 10px 16px; font-size: 14px; outline: none; font-family: inherit; background: #F8FAFC; }
+  .ch-inp input:focus { border-color: #059669; background: white; }
+  .ch-send { width: 38px; height: 38px; background: #059669; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(5,150,105,0.3); }
+
+  /* MOBILE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #0A1628; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+    .home-ind { padding: 4px 0 6px; }
+    .toast { bottom: 100px; }
+  }
+  @media (max-width: 375px) {
+    .ci { padding: 10px 12px; }
+    .wc { padding: 14px; border-radius: 16px; }
+    .map-ground { padding: 12px 8px 24px; }
+    .iso-grid { gap: 4px; }
+    .cell-emoji { font-size: 18px; }
+    .cell.med .cell-emoji { font-size: 20px; }
+    .cell.tall .cell-emoji { font-size: 22px; }
+    .cell-lbl { font-size: 6px; }
+    .stat-num { font-size: 20px; }
+    .stat-card { padding: 10px 6px; }
+    .goal-banner { padding: 14px; }
+    .build-icon { width: 40px; height: 40px; font-size: 20px; }
+    .build-name { font-size: 14px; }
+    .lb-name { font-size: 13px; }
+    .friend-ava { width: 36px; height: 36px; font-size: 14px; }
+    .friend-obj { width: 30px; height: 30px; font-size: 17px; }
+    .prof-ava { width: 64px; height: 64px; font-size: 24px; }
+    .prof-name { font-size: 18px; }
+    .ps-n { font-size: 18px; }
+    .bm-grid { gap: 6px; }
+    .bm-item { padding: 10px 4px 8px; }
+    .bm-item-emoji { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <div class="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-logo">
+        <div class="hdr-logo-icon">🏘</div>
+        <div><b>АПРИ.Квартал</b><span>Построй свой квартал</span></div>
+      </div>
+      <div class="hdr-actions">
+        <div class="hdr-btn" onclick="toast('Настройки')">⚙️</div>
+        <div class="hdr-btn" onclick="toast('5 уведомлений')">🔔<div class="hdr-badge">5</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ ГЛАВНАЯ ══ -->
+    <div class="screen active" id="s-home">
+
+      <!-- 3D Interactive Map -->
+      <div class="map-wrap fade">
+        <div class="map-ground">
+          <div class="map-hdr"><b>ЖК «Солнечный» · ваш квартал</b><span id="progCount">9 / 15</span></div>
+          <div class="iso-grid" id="isoGrid">
+            <!-- JS fills this -->
+          </div>
+          <div class="map-prog">
+            <div class="map-pbar"><div class="map-pfill" id="progFill" style="width:60%"></div></div>
+            <div class="map-plbl" id="progLbl">60%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ci">
+        <div class="stat-row fade" style="animation-delay:.06s">
+          <div class="stat-card">
+            <div class="stat-num" id="builtNum">9</div>
+            <div class="stat-lbl">Построено</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#059669">200К</div>
+            <div class="stat-lbl">Бонусов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#F59E0B">4</div>
+            <div class="stat-lbl">Место</div>
+          </div>
+        </div>
+
+        <div class="goal-banner fade" style="animation-delay:.1s">
+          <div class="goal-title">🏆 Коллективная цель</div>
+          <div class="goal-desc">Постройте весь квартал вместе с соседями и получите шанс выиграть квартиру-студию!</div>
+          <div class="goal-bar"><div class="goal-fill" style="width:72%"></div></div>
+          <div class="goal-stats"><span>72% завершено</span><span>28 из 40 домов</span></div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.14s">
+          <div class="wc-title">Активность соседей <span class="wc-link" onclick="goTab('rank')">Рейтинг →</span></div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#F43F5E,#FB923C)">АД</div>
+              <div class="friend-info"><div class="friend-name">Артём Давыдов</div><div class="friend-status">Построил дом и 5 объектов</div></div>
+              <div class="friend-built">🏡 +5</div>
+            </div>
+            <div class="friend-objects">
+              <span class="friend-obj">🏡</span><span class="friend-obj">🌳</span><span class="friend-obj">🏮</span><span class="friend-obj">🪑</span><span class="friend-obj">🌷</span><span class="friend-obj">☕</span>
+            </div>
+          </div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)">ОК</div>
+              <div class="friend-info"><div class="friend-name">Ольга Кузнецова</div><div class="friend-status">Построила 3 объекта</div></div>
+              <div class="friend-built">🌳 +3</div>
+            </div>
+            <div class="friend-objects">
+              <span class="friend-obj">🌳</span><span class="friend-obj">🌷</span><span class="friend-obj">🏮</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ КВАРТАЛ ══ -->
+    <div class="screen" id="s-build">
+      <div class="ci">
+        <div style="font-size:22px;font-weight:900;color:#1A1A2E;margin-bottom:4px">Каталог объектов</div>
+        <div style="font-size:13px;color:#8E8E93;margin-bottom:14px">Нажмите на пустую ячейку на карте, чтобы построить</div>
+
+        <div class="wc fade">
+          <div class="wc-title">Что можно построить</div>
+          <div class="build-item" onclick="goTab('home');toast('Выберите пустую ячейку на карте')"><div class="build-icon" style="background:#FEF3C7">🏮</div><div class="build-info"><div class="build-name">Фонарный столб</div><div class="build-desc">Освещение дорожки к дому</div></div><div class="build-cost">5 000 ₽</div></div>
+          <div class="build-item" onclick="goTab('home');toast('Выберите пустую ячейку на карте')"><div class="build-icon" style="background:#E0E7FF">🪑</div><div class="build-info"><div class="build-name">Лавочка</div><div class="build-desc">Зона отдыха у подъезда</div></div><div class="build-cost">8 000 ₽</div></div>
+          <div class="build-item" onclick="goTab('home');toast('Выберите пустую ячейку на карте')"><div class="build-icon" style="background:#ECFDF5">🌳</div><div class="build-info"><div class="build-name">Дерево</div><div class="build-desc">Озеленение двора</div></div><div class="build-cost">10 000 ₽</div></div>
+          <div class="build-item" onclick="goTab('home');toast('Выберите пустую ячейку на карте')"><div class="build-icon" style="background:#FCE7F3">🎪</div><div class="build-info"><div class="build-name">Детская площадка</div><div class="build-desc">Качели, горки, песочница</div></div><div class="build-cost">30 000 ₽</div></div>
+          <div class="build-item" onclick="goTab('home');toast('Выберите пустую ячейку на карте')"><div class="build-icon" style="background:#FEF3C7">☕</div><div class="build-info"><div class="build-name">Кафе</div><div class="build-desc">Уютное кафе во дворе</div></div><div class="build-cost">50 000 ₽</div></div>
+          <div class="build-item" onclick="goTab('home');toast('Пригласите друга!')"><div class="build-icon" style="background:#E0E7FF">🏡</div><div class="build-info"><div class="build-name">Дом соседа</div><div class="build-desc">Друг покупает квартиру в АПРИ</div></div><div class="build-cost" style="background:#E0E7FF;color:#2A4A7F">Реферал</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ РЕЙТИНГ ══ -->
+    <div class="screen" id="s-rank">
+      <div class="ci">
+        <div style="font-size:22px;font-weight:900;color:#1A1A2E;margin-bottom:4px">Рейтинг кварталов</div>
+        <div style="font-size:13px;color:#8E8E93;margin-bottom:14px">Самые живые районы ЖК «Солнечный»</div>
+        <div class="goal-banner fade">
+          <div class="goal-title">🎁 Приз за 1-е место</div>
+          <div class="goal-desc">Жители лучшего квартала получат +50 000 бонусных баллов каждый!</div>
+          <div class="goal-stats"><span>До конца сезона: 18 дней</span><span>Сезон #2</span></div>
+        </div>
+        <div class="wc fade" style="animation-delay:.06s">
+          <div class="wc-title">Топ кварталов</div>
+          <div class="lb-row"><div class="lb-rank">🥇</div><div class="lb-info"><div class="lb-name">Квартал «Восход»</div><div class="lb-sub">18 жителей · 42 объекта</div></div><div class="lb-score">98%</div></div>
+          <div class="lb-row"><div class="lb-rank">🥈</div><div class="lb-info"><div class="lb-name">Квартал «Берёзовый»</div><div class="lb-sub">15 жителей · 38 объектов</div></div><div class="lb-score">85%</div></div>
+          <div class="lb-row"><div class="lb-rank">🥉</div><div class="lb-info"><div class="lb-name">Квартал «Парковый»</div><div class="lb-sub">20 жителей · 35 объектов</div></div><div class="lb-score">78%</div></div>
+          <div class="lb-row lb-you"><div class="lb-rank" style="color:#059669;font-weight:900">4</div><div class="lb-info"><div class="lb-name" style="color:#059669">Квартал «Солнечный» ← вы</div><div class="lb-sub">12 жителей · 28 объектов</div></div><div class="lb-score">72%</div></div>
+          <div class="lb-row"><div class="lb-rank">5</div><div class="lb-info"><div class="lb-name">Квартал «Южный»</div><div class="lb-sub">10 жителей · 22 объекта</div></div><div class="lb-score">60%</div></div>
+          <div class="lb-row"><div class="lb-rank">6</div><div class="lb-info"><div class="lb-name">Квартал «Радужный»</div><div class="lb-sub">8 жителей · 18 объектов</div></div><div class="lb-score">52%</div></div>
+          <div class="lb-row"><div class="lb-rank">7</div><div class="lb-info"><div class="lb-name">Квартал «Лесной»</div><div class="lb-sub">14 жителей · 15 объектов</div></div><div class="lb-score">44%</div></div>
+          <div class="lb-row"><div class="lb-rank">8</div><div class="lb-info"><div class="lb-name">Квартал «Речной»</div><div class="lb-sub">6 жителей · 10 объектов</div></div><div class="lb-score">32%</div></div>
+        </div>
+        <div class="wc fade" style="animation-delay:.1s">
+          <div class="wc-title">Ваш вклад в квартал</div>
+          <div style="display:flex;justify-content:space-between">
+            <div style="text-align:center;flex:1"><div style="font-size:26px;font-weight:900;color:#059669">9</div><div style="font-size:11px;color:#8E8E93;margin-top:2px">Объектов</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:26px;font-weight:900;color:#1A1A2E">3</div><div style="font-size:11px;color:#8E8E93;margin-top:2px">Рефералов</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:26px;font-weight:900;color:#F59E0B">2</div><div style="font-size:11px;color:#8E8E93;margin-top:2px">Дома соседей</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ РЕФЕРАЛЫ ══ -->
+    <div class="screen" id="s-ref">
+      <div class="ci">
+        <div class="invite-block fade">
+          <div class="invite-title">Стройте квартал вместе с друзьями!</div>
+          <div class="invite-desc">Каждый приглашённый друг = новый дом в вашем квартале. Чем больше домов, тем выше шанс на главный приз!</div>
+          <div class="invite-code" onclick="toast('Код скопирован!')"><span>MARIA-2025</span><em>Скопировать</em></div>
+          <div class="invite-share">
+            <div class="share-btn sh-wa" onclick="toast('WhatsApp')">WhatsApp</div>
+            <div class="share-btn sh-tg" onclick="toast('Telegram')">Telegram</div>
+            <div class="share-btn sh-lnk" onclick="toast('Ссылка скопирована')">Ссылка</div>
+          </div>
+        </div>
+        <div class="wc fade" style="animation-delay:.06s">
+          <div class="wc-title">Что даёт реферал</div>
+          <div class="build-item"><div class="build-icon" style="background:#ECFDF5">📝</div><div class="build-info"><div class="build-name">Заявка друга</div><div class="build-desc">+Фонарный столб в квартал</div></div><div class="build-cost">+5 000 ₽</div></div>
+          <div class="build-item"><div class="build-icon" style="background:#EFF6FF">🏢</div><div class="build-info"><div class="build-name">Визит в офис</div><div class="build-desc">+Дерево и лавочка</div></div><div class="build-cost">+10 000 ₽</div></div>
+          <div class="build-item"><div class="build-icon" style="background:#FEF3C7">📋</div><div class="build-info"><div class="build-name">Бронирование</div><div class="build-desc">+Детская площадка</div></div><div class="build-cost">+30 000 ₽</div></div>
+          <div class="build-item"><div class="build-icon" style="background:#FCE7F3">🎉</div><div class="build-info"><div class="build-name">Сделка</div><div class="build-desc">+Дом соседа в квартале!</div></div><div class="build-cost" style="font-size:15px">+300 000 ₽</div></div>
+        </div>
+        <div class="wc fade" style="animation-delay:.1s">
+          <div class="wc-title">Мои рефералы</div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#F43F5E,#FB923C)">АД</div>
+              <div class="friend-info"><div class="friend-name">Артём Давыдов</div><div class="friend-status">✅ Купил квартиру · дом 5</div></div>
+              <div class="friend-built">🏡</div>
+            </div>
+            <div class="friend-objects"><span class="friend-obj">🏮</span><span class="friend-obj">🌳</span><span class="friend-obj">🪑</span><span class="friend-obj">🎪</span><span class="friend-obj">🏡</span></div>
+          </div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)">ОК</div>
+              <div class="friend-info"><div class="friend-name">Ольга Кузнецова</div><div class="friend-status">🏢 Была в офисе</div></div>
+              <div class="friend-built">🌳</div>
+            </div>
+            <div class="friend-objects"><span class="friend-obj">🏮</span><span class="friend-obj">🌳</span><span class="friend-obj">🪑</span></div>
+          </div>
+          <div class="friend-card">
+            <div class="friend-top">
+              <div class="friend-ava" style="background:linear-gradient(135deg,#38BDF8,#818CF8)">ДП</div>
+              <div class="friend-info"><div class="friend-name">Дмитрий Петров</div><div class="friend-status">📝 Оставил заявку</div></div>
+              <div class="friend-built">🏮</div>
+            </div>
+            <div class="friend-objects"><span class="friend-obj">🏮</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПРОФИЛЬ ══ -->
+    <div class="screen" id="s-profile">
+      <div class="ci">
+        <div class="prof-hero fade">
+          <div class="prof-ava">МИ</div>
+          <div class="prof-name">Мария Иванова</div>
+          <div class="prof-sub">ЖК «Солнечный» · дом 3, кв. 45</div>
+          <div class="prof-badge">🏘 Застройщик квартала</div>
+          <div class="prof-stats">
+            <div class="ps"><div class="ps-n">200К</div><div class="ps-l">бонусов</div></div>
+            <div class="ps"><div class="ps-n">9</div><div class="ps-l">объектов</div></div>
+            <div class="ps"><div class="ps-n">4</div><div class="ps-l">место</div></div>
+          </div>
+        </div>
+        <div class="prof-actions fade" style="animation-delay:.08s">
+          <div class="pact" onclick="goTab('build')"><div class="pact-i" style="background:#ECFDF5">🏘</div><div class="pact-l">Мой квартал</div><div class="pact-a">›</div></div>
+          <div class="pact" onclick="toast('Мои постройки')"><div class="pact-i" style="background:#E0E7FF">🏗</div><div class="pact-l">Мои постройки</div><div class="pact-a">›</div></div>
+          <div class="pact" onclick="toast('Реферальная ссылка')"><div class="pact-i" style="background:#FEF3C7">🔗</div><div class="pact-l">Реферальная ссылка</div><div class="pact-a">›</div></div>
+          <div class="pact" onclick="goTab('support')"><div class="pact-i" style="background:#FCE7F3">💬</div><div class="pact-l">Поддержка</div><div class="pact-a">›</div></div>
+          <div class="pact" onclick="toast('Уведомления')"><div class="pact-i" style="background:#F0F4F8">🔔</div><div class="pact-l">Уведомления</div><div class="pact-a">›</div></div>
+          <div class="pact danger" onclick="toast('Выход')"><div class="pact-i" style="background:#FEE2E2">🚪</div><div class="pact-l">Выйти</div><div class="pact-a">›</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПОДДЕРЖКА ══ -->
+    <div class="screen" id="s-support">
+      <div class="ch-head"><div class="ch-ava">🏘</div><div class="ch-info"><b>АПРИ · Поддержка</b><span>● Онлайн</span></div></div>
+      <div class="ch-msgs" id="chatMsgs">
+        <div class="cm ag"><div class="cm-t">Здравствуйте, Мария! Я консультант программы «Построй свой квартал». Чем могу помочь?</div><div class="cm-d">12:30</div></div>
+        <div class="cm me"><div class="cm-t">Как построить новый объект?</div><div class="cm-d">12:31</div></div>
+        <div class="cm ag"><div class="cm-t">Всё просто! Нажмите на пустую ячейку на карте и выберите объект. Приглашайте друзей, чтобы получить больше бонусов!</div><div class="cm-d">12:31</div></div>
+      </div>
+      <div class="ch-qr">
+        <div class="qr" onclick="sendQR('Как пригласить друга?')">Пригласить друга</div>
+        <div class="qr" onclick="sendQR('Как получить бонусы?')">Бонусы</div>
+        <div class="qr" onclick="sendQR('Правила розыгрыша')">Розыгрыш</div>
+      </div>
+      <div class="ch-inp"><input type="text" id="chatInput" placeholder="Напишите сообщение..." /><button class="ch-send" onclick="sendChat()">➤</button></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn on" id="bn-home" onclick="goTab('home')"><div class="i">🏠</div><div class="l">Главная</div></div>
+    <div class="bn" id="bn-build" onclick="goTab('build')"><div class="i">🏘</div><div class="l">Квартал</div></div>
+    <div class="bn" id="bn-rank" onclick="goTab('rank')"><div class="i">🏆</div><div class="l">Рейтинг</div></div>
+    <div class="bn" id="bn-ref" onclick="goTab('ref')"><div class="i">👥</div><div class="l">Друзья</div></div>
+    <div class="bn" id="bn-profile" onclick="goTab('profile')"><div class="i">👤</div><div class="l">Профиль</div></div>
+  </div>
+  <div class="home-ind"><div class="home-bar"></div></div>
+
+  <!-- BUILD MODAL -->
+  <div class="bm" id="buildModal">
+    <div class="bm-ov" onclick="closeBuild()"></div>
+    <div class="bm-sheet">
+      <div class="bm-handle"></div>
+      <div class="bm-title">Что построить?</div>
+      <div class="bm-grid" id="bmGrid"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toastEl"></div>
+</div>
+
+<script>
+// ── MAP DATA ──
+var TOTAL = 15;
+var cells = [
+  { emoji:'🏠', name:'Ваш дом', h:'tall', built:true },
+  { emoji:'🏮', name:'Фонарь',  h:'sm',   built:true },
+  { emoji:'🌳', name:'Дерево',  h:'med',  built:true },
+  { emoji:'🪑', name:'Лавочка', h:'sm',   built:true },
+  { emoji:null,  name:'Фонтан',  built:false },
+  { emoji:'🌲', name:'Ель',     h:'med',  built:true },
+  { emoji:'🌷', name:'Клумба',  h:'sm',   built:true },
+  { emoji:null,  name:'Качели',  built:false },
+  { emoji:'🎪', name:'Площадка',h:'med',  built:true },
+  { emoji:'🏡', name:'Артём',   h:'tall', built:true },
+  { emoji:null,  name:'Беседка', built:false },
+  { emoji:'🅿️', name:'Парковка',h:'med',  built:true },
+  { emoji:null,  name:'Спорт',   built:false },
+  { emoji:'☕', name:'Кафе',    h:'med',  built:true },
+  { emoji:null,  name:'Магазин', built:false }
+];
+var builtCount = 9;
+
+var buildables = [
+  { emoji:'🏮', name:'Фонарь',     cost:'5 000',  h:'sm' },
+  { emoji:'🪑', name:'Лавочка',    cost:'8 000',  h:'sm' },
+  { emoji:'🌷', name:'Клумба',     cost:'7 000',  h:'sm' },
+  { emoji:'🌳', name:'Дерево',     cost:'10 000', h:'med' },
+  { emoji:'🌲', name:'Ель',        cost:'10 000', h:'med' },
+  { emoji:'⛲', name:'Фонтан',     cost:'25 000', h:'med' },
+  { emoji:'🎠', name:'Качели',     cost:'15 000', h:'med' },
+  { emoji:'🎪', name:'Площадка',   cost:'30 000', h:'med' },
+  { emoji:'☕', name:'Кафе',       cost:'50 000', h:'med' }
+];
+
+var currentCellIdx = -1;
+
+// ── RENDER MAP ──
+function renderMap() {
+  var grid = document.getElementById('isoGrid');
+  grid.innerHTML = '';
+  cells.forEach(function(c, i) {
+    var div = document.createElement('div');
+    if (c.built) {
+      div.className = 'cell ' + c.h;
+      div.innerHTML = '<span class="cell-emoji">' + c.emoji + '</span><span class="cell-lbl">' + c.name + '</span>';
+      div.onclick = function() { toast(c.emoji + ' ' + c.name); };
+    } else {
+      div.className = 'cell empty';
+      div.innerHTML = '<span class="cell-emoji">➕</span><span class="cell-lbl">' + c.name + '</span>';
+      div.onclick = function() { openBuild(i); };
+    }
+    grid.appendChild(div);
+  });
+}
+
+// ── BUILD MODAL ──
+function openBuild(idx) {
+  currentCellIdx = idx;
+  var grid = document.getElementById('bmGrid');
+  grid.innerHTML = '';
+  buildables.forEach(function(b, i) {
+    var d = document.createElement('div');
+    d.className = 'bm-item';
+    d.innerHTML = '<div class="bm-item-emoji">' + b.emoji + '</div><div class="bm-item-name">' + b.name + '</div><div class="bm-item-cost">' + b.cost + ' ₽</div>';
+    d.onclick = function() { doBuild(i); };
+    grid.appendChild(d);
+  });
+  document.getElementById('buildModal').classList.add('open');
+}
+
+function closeBuild() {
+  document.getElementById('buildModal').classList.remove('open');
+  currentCellIdx = -1;
+}
+
+function doBuild(bIdx) {
+  var b = buildables[bIdx];
+  var ci = currentCellIdx;
+  closeBuild();
+
+  // Update data
+  cells[ci].built = true;
+  cells[ci].emoji = b.emoji;
+  cells[ci].h = b.h;
+  builtCount++;
+
+  // Re-render
+  renderMap();
+
+  // Animate the new cell
+  var cellEl = document.getElementById('isoGrid').children[ci];
+  cellEl.classList.add('anim');
+  cellEl.addEventListener('animationend', function() { cellEl.classList.remove('anim'); }, { once: true });
+
+  // Update stats
+  document.getElementById('builtNum').textContent = builtCount;
+  var pct = Math.round(builtCount / TOTAL * 100);
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progLbl').textContent = pct + '%';
+  document.getElementById('progCount').textContent = builtCount + ' / ' + TOTAL;
+
+  toast('✨ ' + b.name + ' построен!');
+}
+
+// ── NAV ──
+function goTab(name) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.bn').forEach(function(b) { b.classList.remove('on'); });
+  var el = document.getElementById('s-' + name); if (el) el.classList.add('active');
+  var bn = document.getElementById('bn-' + name); if (bn) bn.classList.add('on');
+  if (name === 'support') { document.getElementById('s-support').classList.add('active'); document.getElementById('bn-profile').classList.add('on'); setTimeout(function() { document.getElementById('chatMsgs').scrollTop = 99999; }, 100); }
+}
+
+function toast(msg) { var t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(function() { t.classList.remove('show'); }, 1800); }
+
+// ── CHAT ──
+function sendChat() { var inp = document.getElementById('chatInput'), msg = inp.value.trim(); if (!msg) return; var a = document.getElementById('chatMsgs'), now = new Date(), t = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0'); a.innerHTML += '<div class="cm me"><div class="cm-t">' + msg + '</div><div class="cm-d">' + t + '</div></div>'; inp.value = ''; a.scrollTop = 99999; setTimeout(function() { a.innerHTML += '<div class="cm ag"><div class="cm-t">Спасибо за вопрос! Уточню информацию и вернусь с ответом.</div><div class="cm-d">' + t + '</div></div>'; a.scrollTop = 99999; }, 1200); }
+function sendQR(t) { document.getElementById('chatInput').value = t; sendChat(); }
+document.getElementById('chatInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChat(); });
+
+// ── INIT ──
+renderMap();
+</script>
+</body>
+</html>

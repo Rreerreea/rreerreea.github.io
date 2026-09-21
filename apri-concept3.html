@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АПРИ — Большой розыгрыш</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #C8C8CC; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 40px; }
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12); display: flex; flex-direction: column; background: #0F172A; position: relative; }
+
+  /* STATUS BAR (removed) */
+
+  /* HEADER */
+  .app-hdr { background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 28px 20px 24px; flex-shrink: 0; }
+  .hdr-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .hdr-logo { display: flex; align-items: center; gap: 10px; }
+  .hdr-logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F59E0B, #EF4444); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .hdr-logo b { font-size: 17px; font-weight: 800; color: white; }
+  .hdr-logo span { font-size: 11px; color: rgba(255,255,255,0.45); display: block; margin-top: 1px; }
+  .hdr-actions { display: flex; gap: 10px; }
+  .hdr-btn { width: 36px; height: 36px; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; position: relative; }
+  .hdr-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #F43F5E; border-radius: 50%; font-size: 8px; font-weight: 800; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid #0F172A; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; scrollbar-width: none; background: #0F172A; }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  #s-support { display: none; flex-direction: column; }
+  #s-support.active { display: flex; }
+  .ci { padding: 12px 16px; }
+
+  /* CARDS */
+  .wc { background: #1E293B; border-radius: 18px; padding: 16px; margin-bottom: 10px; }
+  .wc-title { font-size: 16px; font-weight: 800; color: white; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .wc-link { font-size: 12px; color: #F59E0B; font-weight: 700; cursor: pointer; }
+
+  /* JACKPOT HERO */
+  .jackpot-hero { background: linear-gradient(135deg, #1E293B 0%, #312E81 50%, #1E293B 100%); border-radius: 22px; padding: 20px; margin-bottom: 10px; text-align: center; position: relative; overflow: hidden; }
+  .jackpot-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, rgba(245,158,11,0.15), transparent 70%); }
+  .jackpot-label { font-size: 12px; font-weight: 700; color: #F59E0B; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; position: relative; }
+  .jackpot-amount { font-size: 42px; font-weight: 900; color: white; line-height: 1; margin-bottom: 4px; position: relative; text-shadow: 0 0 40px rgba(245,158,11,0.3); }
+  .jackpot-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 16px; position: relative; }
+  .jackpot-timer { display: flex; justify-content: center; gap: 8px; position: relative; margin-bottom: 16px; }
+  .timer-block { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 8px 12px; min-width: 60px; }
+  .timer-num { font-size: 24px; font-weight: 900; color: white; }
+  .timer-lbl { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .jackpot-tickets { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); border-radius: 14px; padding: 10px 16px; position: relative; }
+  .ticket-icon { font-size: 24px; }
+  .ticket-info { text-align: left; }
+  .ticket-num { font-size: 18px; font-weight: 900; color: #F59E0B; }
+  .ticket-lbl { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+  /* TICKET EARNING */
+  .earn-step { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+  .earn-step:last-child { border-bottom: none; }
+  .earn-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .earn-info { flex: 1; min-width: 0; }
+  .earn-name { font-size: 14px; font-weight: 700; color: white; }
+  .earn-desc { font-size: 11px; color: #64748B; margin-top: 1px; }
+  .earn-tickets { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 800; color: #F59E0B; flex-shrink: 0; }
+  .earn-tickets .mult { font-size: 11px; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 6px; }
+
+  /* PRIZE LIST */
+  .prize-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: transform 0.12s; }
+  .prize-row:active { transform: scale(0.98); }
+  .prize-row.grand { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1)); border: 1px solid rgba(245,158,11,0.2); }
+  .prize-icon { font-size: 32px; flex-shrink: 0; }
+  .prize-info { flex: 1; min-width: 0; }
+  .prize-name { font-size: 14px; font-weight: 700; color: white; }
+  .prize-desc { font-size: 11px; color: #64748B; margin-top: 2px; }
+  .prize-value { font-size: 15px; font-weight: 900; color: #F59E0B; flex-shrink: 0; }
+
+  /* WINNER CARDS */
+  .winner-card { background: rgba(255,255,255,0.04); border-radius: 16px; padding: 14px; margin-bottom: 8px; }
+  .winner-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .winner-ava { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; flex-shrink: 0; }
+  .winner-info { flex: 1; min-width: 0; }
+  .winner-name { font-size: 14px; font-weight: 700; color: white; }
+  .winner-status { font-size: 11px; color: #64748B; }
+  .winner-prize { font-size: 13px; font-weight: 800; color: #F59E0B; flex-shrink: 0; }
+  .winner-quote { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.5; font-style: italic; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; border-left: 3px solid #F59E0B; }
+
+  /* CHANCES */
+  .chance-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .chance-lbl { font-size: 12px; color: rgba(255,255,255,0.6); min-width: 80px; }
+  .chance-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .chance-fill { height: 100%; border-radius: 4px; }
+  .chance-val { font-size: 12px; font-weight: 800; color: #F59E0B; min-width: 30px; text-align: right; }
+
+  /* INVITE BLOCK */
+  .invite-block { background: linear-gradient(135deg, #312E81 0%, #1E1B4B 100%); border-radius: 18px; padding: 16px; margin-bottom: 10px; color: white; }
+  .invite-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+  .invite-desc { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 12px; line-height: 1.4; }
+  .invite-code { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; cursor: pointer; }
+  .invite-code span { flex: 1; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+  .invite-code em { font-size: 12px; font-style: normal; color: rgba(255,255,255,0.4); }
+  .invite-share { display: flex; gap: 8px; }
+  .share-btn { flex: 1; padding: 9px; border-radius: 10px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .sh-wa { background: #25D366; color: white; }
+  .sh-tg { background: #0088CC; color: white; }
+  .sh-lnk { background: rgba(255,255,255,0.12); color: white; }
+
+  /* STAT ROW */
+  .stat-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-card { flex: 1; background: #1E293B; border-radius: 14px; padding: 12px; text-align: center; }
+  .stat-num { font-size: 20px; font-weight: 900; color: white; }
+  .stat-lbl { font-size: 10px; color: #64748B; margin-top: 2px; font-weight: 600; }
+
+  /* LIVE FEED */
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .feed-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: rgba(255,255,255,0.7); }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-ava { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
+  .feed-time { font-size: 10px; color: #64748B; flex-shrink: 0; }
+
+  /* PROFILE */
+  .prof-hero { background: #1E293B; border-radius: 20px; padding: 20px; margin-bottom: 10px; text-align: center; }
+  .prof-ava { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: white; margin: 0 auto 12px; }
+  .prof-name { font-size: 18px; font-weight: 800; color: white; }
+  .prof-sub { font-size: 12px; color: #64748B; margin-top: 3px; }
+  .prof-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #F59E0B; background: rgba(245,158,11,0.12); padding: 3px 10px; border-radius: 10px; margin-top: 8px; }
+  .prof-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+  .ps { text-align: center; border-right: 1px solid rgba(255,255,255,0.06); }
+  .ps:last-child { border-right: none; }
+  .ps-n { font-size: 20px; font-weight: 900; color: white; }
+  .ps-l { font-size: 10px; color: #64748B; margin-top: 2px; }
+  .prof-actions { background: #1E293B; border-radius: 18px; overflow: hidden; margin-bottom: 10px; }
+  .pact { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; }
+  .pact:last-child { border-bottom: none; }
+  .pact:active { background: rgba(255,255,255,0.03); }
+  .pact-i { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .pact-l { flex: 1; font-size: 14px; font-weight: 600; color: white; }
+  .pact-a { color: #475569; font-size: 16px; }
+  .pact.danger .pact-l { color: #F43F5E; }
+
+  /* BOTTOM NAV */
+  .bnav { background: #1E293B; display: flex; align-items: center; justify-content: space-around; padding: 8px 0 16px; flex-shrink: 0; border-top: 0.5px solid rgba(255,255,255,0.06); }
+  .bn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 2px 8px; }
+  .bn .i { font-size: 22px; opacity: 0.3; }
+  .bn .l { font-size: 10px; font-weight: 600; color: #64748B; }
+  .bn.on .i { opacity: 1; }
+  .bn.on .l { color: #F59E0B; font-weight: 700; }
+  .home-ind { background: #1E293B; display: flex; justify-content: center; padding: 6px 0 8px; flex-shrink: 0; }
+  .home-bar { width: 130px; height: 5px; background: white; border-radius: 3px; opacity: 0.15; }
+
+  /* TOAST */
+  .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(245,158,11,0.95); color: #0F172A; padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 700; opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .fade { opacity: 0; transform: translateY(8px); animation: fu .4s ease forwards; }
+  @keyframes fu { to { opacity: 1; transform: none; } }
+
+  /* CTA BUTTON */
+  .cta-btn { display: block; width: 100%; padding: 14px; border-radius: 14px; text-align: center; font-size: 15px; font-weight: 800; cursor: pointer; border: none; font-family: inherit; transition: transform 0.12s; }
+  .cta-btn:active { transform: scale(0.97); }
+  .cta-gold { background: linear-gradient(135deg, #F59E0B, #EF4444); color: white; }
+  .cta-outline { background: transparent; border: 2px solid rgba(245,158,11,0.3); color: #F59E0B; }
+
+  /* SUPPORT CHAT */
+  .ch-head { background: #1E293B; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; position: sticky; top: 0; z-index: 5; }
+  .ch-ava { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .ch-info b { display: block; font-size: 14px; font-weight: 700; color: white; }
+  .ch-info span { font-size: 11px; color: #10B981; }
+  .ch-msgs { flex: 1; overflow-y: auto; padding: 12px 16px; scrollbar-width: none; display: flex; flex-direction: column; gap: 8px; }
+  .ch-msgs::-webkit-scrollbar { display: none; }
+  .cm { max-width: 76%; }
+  .cm.ag { align-self: flex-start; }
+  .cm.me { align-self: flex-end; }
+  .cm-t { padding: 9px 13px; border-radius: 16px; font-size: 13px; line-height: 1.45; }
+  .cm.ag .cm-t { background: #1E293B; color: rgba(255,255,255,0.9); border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .cm.me .cm-t { background: linear-gradient(135deg, #F59E0B, #EF4444); color: white; border-radius: 16px 4px 16px 16px; }
+  .cm-d { font-size: 10px; color: #64748B; margin-top: 3px; }
+  .cm.me .cm-d { text-align: right; }
+  .ch-qr { padding: 8px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .ch-qr::-webkit-scrollbar { display: none; }
+  .qr { padding: 7px 14px; background: rgba(245,158,11,0.12); color: #F59E0B; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+  .ch-inp { padding: 8px 16px 12px; background: #1E293B; display: flex; gap: 10px; align-items: center; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+  .ch-inp input { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 9px 16px; font-size: 14px; outline: none; font-family: inherit; background: rgba(255,255,255,0.05); color: white; }
+  .ch-inp input:focus { border-color: #F59E0B; }
+  .ch-inp input::placeholder { color: #475569; }
+  .ch-send { width: 38px; height: 38px; background: linear-gradient(135deg, #F59E0B, #EF4444); border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  /* MOBILE */
+  @media (max-width: 430px) {
+    body { padding: 0; background: #0F172A; }
+    .phone { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+    .sbar { height: 44px; padding: 0 20px 6px; }
+    .home-ind { padding: 4px 0 6px; }
+    .toast { bottom: 100px; }
+  }
+  @media (max-width: 375px) {
+    .ci { padding: 10px 12px; }
+    .wc { padding: 14px; }
+    .jackpot-hero { padding: 16px; border-radius: 18px; }
+    .jackpot-amount { font-size: 34px; }
+    .jackpot-sub { font-size: 12px; }
+    .jackpot-timer { gap: 6px; }
+    .timer-block { min-width: 52px; padding: 6px 10px; }
+    .timer-num { font-size: 20px; }
+    .timer-lbl { font-size: 8px; }
+    .ticket-num { font-size: 16px; }
+    .stat-num { font-size: 18px; }
+    .stat-card { padding: 10px; }
+    .earn-icon { width: 38px; height: 38px; font-size: 18px; }
+    .earn-name { font-size: 13px; }
+    .earn-tickets { font-size: 13px; }
+    .prize-icon { font-size: 26px; }
+    .prize-name { font-size: 13px; }
+    .prize-value { font-size: 13px; }
+    .winner-ava { width: 36px; height: 36px; font-size: 14px; }
+    .winner-quote { font-size: 11px; padding: 8px 10px; }
+    .cta-btn { font-size: 14px; padding: 12px; }
+    .prof-ava { width: 60px; height: 60px; font-size: 22px; }
+    .prof-name { font-size: 16px; }
+    .ps-n { font-size: 18px; }
+    .feed-item { font-size: 12px; }
+    .feed-ava { width: 24px; height: 24px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+
+  <div class="app-hdr">
+    <div class="hdr-top">
+      <div class="hdr-logo">
+        <div class="hdr-logo-icon">🎰</div>
+        <div><b>АПРИ.Розыгрыш</b><span>Большой розыгрыш квартир</span></div>
+      </div>
+      <div class="hdr-actions">
+        <div class="hdr-btn" onclick="toast('Настройки')">⚙️</div>
+        <div class="hdr-btn" onclick="toast('Уведомления')">🔔<div class="hdr-badge">2</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ ГЛАВНАЯ ══ -->
+    <div class="screen active" id="s-home">
+      <div class="ci">
+
+        <!-- Jackpot Hero -->
+        <div class="jackpot-hero fade">
+          <div class="jackpot-label">Главный приз</div>
+          <div class="jackpot-amount">4 500 000 ₽</div>
+          <div class="jackpot-sub">Квартира-студия в ЖК «Солнечный»</div>
+          <div class="jackpot-timer">
+            <div class="timer-block"><div class="timer-num" id="td">12</div><div class="timer-lbl">Дней</div></div>
+            <div class="timer-block"><div class="timer-num" id="th">08</div><div class="timer-lbl">Часов</div></div>
+            <div class="timer-block"><div class="timer-num" id="tm">45</div><div class="timer-lbl">Минут</div></div>
+            <div class="timer-block"><div class="timer-num" id="ts">23</div><div class="timer-lbl">Секунд</div></div>
+          </div>
+          <div class="jackpot-tickets">
+            <div class="ticket-icon">🎫</div>
+            <div class="ticket-info">
+              <div class="ticket-num">18 билетов</div>
+              <div class="ticket-lbl">Ваши шансы выше среднего</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Chances -->
+        <div class="wc fade" style="animation-delay:.06s">
+          <div class="wc-title">Мои шансы <span class="wc-link" onclick="goTab('tickets')">Как получить →</span></div>
+          <div class="chance-bar">
+            <div class="chance-lbl">Заявка</div>
+            <div class="chance-track"><div class="chance-fill" style="width:100%;background:#10B981"></div></div>
+            <div class="chance-val">1 ✅</div>
+          </div>
+          <div class="chance-bar">
+            <div class="chance-lbl">Визит</div>
+            <div class="chance-track"><div class="chance-fill" style="width:100%;background:#38BDF8"></div></div>
+            <div class="chance-val">2 ✅</div>
+          </div>
+          <div class="chance-bar">
+            <div class="chance-lbl">Показ</div>
+            <div class="chance-track"><div class="chance-fill" style="width:100%;background:#8B5CF6"></div></div>
+            <div class="chance-val">15 ✅</div>
+          </div>
+          <div class="chance-bar">
+            <div class="chance-lbl">Покупка</div>
+            <div class="chance-track"><div class="chance-fill" style="width:0%;background:linear-gradient(90deg,#F59E0B,#EF4444)"></div></div>
+            <div class="chance-val" style="color:#475569">×2</div>
+          </div>
+          <div style="text-align:center;margin-top:8px;font-size:12px;color:#F59E0B;font-weight:600">Купите квартиру → удвоение билетов до 36 + гарантированный подарок 🎁</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-row fade" style="animation-delay:.1s">
+          <div class="stat-card">
+            <div class="stat-num" style="color:#F59E0B">18</div>
+            <div class="stat-lbl">Билетов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">847</div>
+            <div class="stat-lbl">Участников</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#10B981">3</div>
+            <div class="stat-lbl">Рефералов</div>
+          </div>
+        </div>
+
+        <!-- Live Feed -->
+        <div class="wc fade" style="animation-delay:.14s">
+          <div class="wc-title"><span><span class="live-dot"></span>Живая лента</span></div>
+          <div class="feed-item">
+            <div class="feed-ava" style="background:linear-gradient(135deg,#10B981,#059669)">ЕС</div>
+            <div style="flex:1">Елена С. получила <b style="color:#F59E0B">+15 билетов</b> за показ</div>
+            <div class="feed-time">2 мин</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-ava" style="background:linear-gradient(135deg,#8B5CF6,#6366F1)">АМ</div>
+            <div style="flex:1">Алексей М. получил <b style="color:#F59E0B">+2 билета</b> за визит</div>
+            <div class="feed-time">8 мин</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-ava" style="background:linear-gradient(135deg,#F43F5E,#EC4899)">НК</div>
+            <div style="flex:1">Наталья К. <b style="color:#F59E0B">удвоила билеты</b> — купила квартиру!</div>
+            <div class="feed-time">23 мин</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-ava" style="background:linear-gradient(135deg,#38BDF8,#0EA5E9)">ДВ</div>
+            <div style="flex:1">Дмитрий В. получил <b style="color:#F59E0B">+1 билет</b> за заявку</div>
+            <div class="feed-time">41 мин</div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="fade" style="animation-delay:.18s">
+          <button class="cta-btn cta-gold" onclick="goTab('ref')" style="margin-bottom:8px">Пригласить друга → больше билетов</button>
+          <button class="cta-btn cta-outline" onclick="goTab('prizes')">Все призы розыгрыша</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ БИЛЕТЫ ══ -->
+    <div class="screen" id="s-tickets">
+      <div class="ci">
+        <div style="font-size:20px;font-weight:900;color:white;margin-bottom:4px">Как получить билеты</div>
+        <div style="font-size:13px;color:#64748B;margin-bottom:12px">Каждое действие в воронке = новые билеты</div>
+
+        <div class="wc fade">
+          <div class="wc-title">Воронка билетов</div>
+          <div class="earn-step" onclick="toast('+1 билет за заявку')">
+            <div class="earn-icon" style="background:rgba(16,185,129,0.12)">📝</div>
+            <div class="earn-info"><div class="earn-name">Оставить заявку</div><div class="earn-desc">Регистрация на сайте АПРИ</div></div>
+            <div class="earn-tickets">+1 <span class="mult">базовый</span></div>
+          </div>
+          <div class="earn-step" onclick="toast('+2 билета за визит')">
+            <div class="earn-icon" style="background:rgba(56,189,248,0.12)">🏢</div>
+            <div class="earn-info"><div class="earn-name">Посетить офис</div><div class="earn-desc">Визит в офис продаж</div></div>
+            <div class="earn-tickets">+2 <span class="mult">×2</span></div>
+          </div>
+          <div class="earn-step" onclick="toast('+15 билетов за просмотр')">
+            <div class="earn-icon" style="background:rgba(139,92,246,0.12)">👀</div>
+            <div class="earn-info"><div class="earn-name">Посмотреть квартиру</div><div class="earn-desc">Показ на объекте</div></div>
+            <div class="earn-tickets">+15 <span class="mult">×15</span></div>
+          </div>
+          <div class="earn-step" onclick="toast('×2 ко всем билетам!')">
+            <div class="earn-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1))">🎉</div>
+            <div class="earn-info"><div class="earn-name">Купить квартиру</div><div class="earn-desc">Удвоение всех билетов + подарок</div></div>
+            <div class="earn-tickets" style="color:#EF4444">×2 ALL <span class="mult" style="background:rgba(239,68,68,0.12);color:#EF4444">джекпот</span></div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.06s">
+          <div class="wc-title">Реферальные билеты</div>
+          <div class="earn-step" onclick="toast('Приглашайте друзей!')">
+            <div class="earn-icon" style="background:rgba(245,158,11,0.12)">👥</div>
+            <div class="earn-info"><div class="earn-name">Друг оставил заявку</div><div class="earn-desc">Вы и друг получаете билеты</div></div>
+            <div class="earn-tickets">+1</div>
+          </div>
+          <div class="earn-step" onclick="toast('Друг посетил офис')">
+            <div class="earn-icon" style="background:rgba(245,158,11,0.12)">🤝</div>
+            <div class="earn-info"><div class="earn-name">Друг посетил офис</div><div class="earn-desc">Бонусные билеты обоим</div></div>
+            <div class="earn-tickets">+2</div>
+          </div>
+          <div class="earn-step" onclick="toast('Друг купил квартиру!')">
+            <div class="earn-icon" style="background:rgba(245,158,11,0.12)">🏠</div>
+            <div class="earn-info"><div class="earn-name">Друг купил квартиру</div><div class="earn-desc">Максимальный бонус!</div></div>
+            <div class="earn-tickets">+10</div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.1s">
+          <div class="wc-title">Мои билеты: 18</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <div style="background:rgba(245,158,11,0.12);border-radius:10px;padding:6px 10px;font-size:12px;color:#F59E0B;font-weight:700">📝 Заявка ×1</div>
+            <div style="background:rgba(56,189,248,0.12);border-radius:10px;padding:6px 10px;font-size:12px;color:#38BDF8;font-weight:700">🏢 Визит ×2</div>
+            <div style="background:rgba(139,92,246,0.12);border-radius:10px;padding:6px 10px;font-size:12px;color:#8B5CF6;font-weight:700">👀 Показ ×15</div>
+          </div>
+          <div style="margin-top:10px;padding:10px;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(239,68,68,0.05));border-radius:10px;border:1px solid rgba(245,158,11,0.15);font-size:12px;color:rgba(255,255,255,0.7);text-align:center">
+            Купите квартиру → билеты станут <b style="color:#F59E0B">36 (×2)</b> + гарантированный подарок 🎁
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПРИЗЫ ══ -->
+    <div class="screen" id="s-prizes">
+      <div class="ci">
+        <div style="font-size:20px;font-weight:900;color:white;margin-bottom:4px">Призы розыгрыша</div>
+        <div style="font-size:13px;color:#64748B;margin-bottom:12px">Ежемесячный розыгрыш · Март 2025</div>
+
+        <div class="prize-row grand fade" onclick="toast('Главный приз!')">
+          <div class="prize-icon">🏆</div>
+          <div class="prize-info"><div class="prize-name">Квартира-студия</div><div class="prize-desc">ЖК «Солнечный», 28 м², 10 этаж</div></div>
+          <div class="prize-value">4 500 000 ₽</div>
+        </div>
+
+        <div class="prize-row fade" style="animation-delay:.04s" onclick="toast('2-й приз')">
+          <div class="prize-icon">🥈</div>
+          <div class="prize-info"><div class="prize-name">Сертификат на ремонт</div><div class="prize-desc">Полная отделка квартиры</div></div>
+          <div class="prize-value">1 000 000 ₽</div>
+        </div>
+
+        <div class="prize-row fade" style="animation-delay:.06s" onclick="toast('3-й приз')">
+          <div class="prize-icon">🥉</div>
+          <div class="prize-info"><div class="prize-name">Обстановка квартиры</div><div class="prize-desc">Мебель + техника</div></div>
+          <div class="prize-value">500 000 ₽</div>
+        </div>
+
+        <div style="font-size:14px;font-weight:800;color:white;margin:14px 0 8px">Дополнительные призы</div>
+
+        <div class="prize-row fade" style="animation-delay:.08s" onclick="toast('10 победителей')">
+          <div class="prize-icon">🎁</div>
+          <div class="prize-info"><div class="prize-name">Сертификат на покупки</div><div class="prize-desc">10 победителей</div></div>
+          <div class="prize-value">100 000 ₽</div>
+        </div>
+
+        <div class="prize-row fade" style="animation-delay:.1s" onclick="toast('25 победителей')">
+          <div class="prize-icon">🛋</div>
+          <div class="prize-info"><div class="prize-name">Подарочная карта IKEA</div><div class="prize-desc">25 победителей</div></div>
+          <div class="prize-value">50 000 ₽</div>
+        </div>
+
+        <div class="prize-row fade" style="animation-delay:.12s" onclick="toast('50 победителей')">
+          <div class="prize-icon">📱</div>
+          <div class="prize-info"><div class="prize-name">Электроника</div><div class="prize-desc">50 победителей</div></div>
+          <div class="prize-value">20 000 ₽</div>
+        </div>
+
+        <div class="prize-row fade" style="animation-delay:.14s" onclick="toast('Для покупателей')">
+          <div class="prize-icon">✨</div>
+          <div class="prize-info"><div class="prize-name">Гарантированный подарок</div><div class="prize-desc">Каждому покупателю квартиры</div></div>
+          <div class="prize-value" style="color:#10B981">Всем</div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.16s;margin-top:10px">
+          <div class="wc-title">Общий призовой фонд</div>
+          <div style="text-align:center">
+            <div style="font-size:32px;font-weight:900;color:#F59E0B;margin-bottom:4px">8 500 000 ₽</div>
+            <div style="font-size:12px;color:#64748B">Более 90 призов в этом месяце</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ РЕФЕРАЛЫ ══ -->
+    <div class="screen" id="s-ref">
+      <div class="ci">
+        <div class="invite-block fade">
+          <div class="invite-title">Приглашай друзей — увеличивай шансы!</div>
+          <div class="invite-desc">За каждого друга вы получаете дополнительные билеты на розыгрыш. Чем больше билетов, тем выше шанс выиграть квартиру!</div>
+          <div class="invite-code" onclick="toast('Код скопирован!')">
+            <span>MARIA-2025</span>
+            <em>Скопировать</em>
+          </div>
+          <div class="invite-share">
+            <div class="share-btn sh-wa" onclick="toast('WhatsApp')">WhatsApp</div>
+            <div class="share-btn sh-tg" onclick="toast('Telegram')">Telegram</div>
+            <div class="share-btn sh-lnk" onclick="toast('Ссылка скопирована')">Ссылка</div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.06s">
+          <div class="wc-title">Мои рефералы</div>
+          <div class="winner-card">
+            <div class="winner-top">
+              <div class="winner-ava" style="background:linear-gradient(135deg,#F43F5E,#FB923C)">АД</div>
+              <div class="winner-info"><div class="winner-name">Артём Давыдов</div><div class="winner-status">✅ Купил квартиру</div></div>
+              <div class="winner-prize">+10 🎫</div>
+            </div>
+          </div>
+          <div class="winner-card">
+            <div class="winner-top">
+              <div class="winner-ava" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)">ОК</div>
+              <div class="winner-info"><div class="winner-name">Ольга Кузнецова</div><div class="winner-status">🏢 Была в офисе</div></div>
+              <div class="winner-prize">+2 🎫</div>
+            </div>
+          </div>
+          <div class="winner-card">
+            <div class="winner-top">
+              <div class="winner-ava" style="background:linear-gradient(135deg,#38BDF8,#818CF8)">ДП</div>
+              <div class="winner-info"><div class="winner-name">Дмитрий Петров</div><div class="winner-status">📝 Оставил заявку</div></div>
+              <div class="winner-prize">+1 🎫</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.1s">
+          <div class="wc-title">Бонус от рефералов</div>
+          <div style="display:flex;justify-content:space-between">
+            <div style="text-align:center;flex:1"><div style="font-size:24px;font-weight:900;color:#F59E0B">13</div><div style="font-size:11px;color:#64748B">Билетов от друзей</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:24px;font-weight:900;color:white">3</div><div style="font-size:11px;color:#64748B">Друга</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:24px;font-weight:900;color:#10B981">1</div><div style="font-size:11px;color:#64748B">Покупка</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПОБЕДИТЕЛИ ══ -->
+    <div class="screen" id="s-winners">
+      <div class="ci">
+        <div style="font-size:20px;font-weight:900;color:white;margin-bottom:4px">Победители</div>
+        <div style="font-size:13px;color:#64748B;margin-bottom:12px">Прошлые розыгрыши</div>
+
+        <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08));border:1px solid rgba(245,158,11,0.15);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center" class="fade">
+          <div style="font-size:12px;color:#F59E0B;font-weight:700;margin-bottom:4px">ФЕВРАЛЬ 2025</div>
+          <div style="font-size:18px;font-weight:900;color:white;margin-bottom:2px">Квартира-студия</div>
+          <div style="font-size:13px;color:#64748B">Разыграна 28 февраля</div>
+        </div>
+
+        <div class="winner-card fade" style="animation-delay:.06s">
+          <div class="winner-top">
+            <div class="winner-ava" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">ИП</div>
+            <div class="winner-info"><div class="winner-name">Ирина Павлова</div><div class="winner-status">🏆 Главный приз · Квартира</div></div>
+            <div class="winner-prize">4.5М ₽</div>
+          </div>
+          <div class="winner-quote">«Не верила до последнего! Просто пришла на показ квартиры по совету подруги, и через месяц выиграла свою студию. Это невероятно!»</div>
+        </div>
+
+        <div class="winner-card fade" style="animation-delay:.08s">
+          <div class="winner-top">
+            <div class="winner-ava" style="background:linear-gradient(135deg,#94A3B8,#64748B)">СК</div>
+            <div class="winner-info"><div class="winner-name">Сергей Козлов</div><div class="winner-status">🥈 2-й приз · Ремонт</div></div>
+            <div class="winner-prize">1М ₽</div>
+          </div>
+          <div class="winner-quote">«Купил квартиру в ЖК Солнечный и попал на розыгрыш. Теперь ещё и ремонт бесплатно! Рекомендую всем участвовать.»</div>
+        </div>
+
+        <div class="winner-card fade" style="animation-delay:.1s">
+          <div class="winner-top">
+            <div class="winner-ava" style="background:linear-gradient(135deg,#CD7F32,#A0522D)">ЕВ</div>
+            <div class="winner-info"><div class="winner-name">Елена Воронова</div><div class="winner-status">🥉 3-й приз · Мебель</div></div>
+            <div class="winner-prize">500К ₽</div>
+          </div>
+          <div class="winner-quote">«Только оставила заявку — и уже 1 билет. Потом сходила на показ — стало 18. А в итоге выиграла мебель на полмиллиона!»</div>
+        </div>
+
+        <div class="wc fade" style="animation-delay:.12s">
+          <div class="wc-title">Статистика розыгрышей</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="text-align:center;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px">
+              <div style="font-size:22px;font-weight:900;color:#F59E0B">12</div>
+              <div style="font-size:10px;color:#64748B">Розыгрышей</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px">
+              <div style="font-size:22px;font-weight:900;color:white">340+</div>
+              <div style="font-size:10px;color:#64748B">Победителей</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px">
+              <div style="font-size:22px;font-weight:900;color:#10B981">54М ₽</div>
+              <div style="font-size:10px;color:#64748B">Призов выдано</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px">
+              <div style="font-size:22px;font-weight:900;color:#EF4444">12</div>
+              <div style="font-size:10px;color:#64748B">Квартир разыграно</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПРОФИЛЬ ══ -->
+    <div class="screen" id="s-profile">
+      <div class="ci">
+        <div class="prof-hero fade">
+          <div class="prof-ava">МИ</div>
+          <div class="prof-name">Мария Иванова</div>
+          <div class="prof-sub">Рассматривает ЖК «Солнечный»</div>
+          <div class="prof-badge">🎫 18 билетов · Этап: показ</div>
+          <div class="prof-stats">
+            <div class="ps"><div class="ps-n">18</div><div class="ps-l">билетов</div></div>
+            <div class="ps"><div class="ps-n">3</div><div class="ps-l">друга</div></div>
+            <div class="ps"><div class="ps-n">2</div><div class="ps-l">розыгрыша</div></div>
+          </div>
+        </div>
+
+        <div class="prof-actions fade" style="animation-delay:.08s">
+          <div class="pact" onclick="goTab('tickets')">
+            <div class="pact-i" style="background:rgba(245,158,11,0.12)">🎫</div>
+            <div class="pact-l">Мои билеты</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="goTab('winners')">
+            <div class="pact-i" style="background:rgba(16,185,129,0.12)">🏆</div>
+            <div class="pact-l">Победители</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="toast('Реферальная ссылка')">
+            <div class="pact-i" style="background:rgba(56,189,248,0.12)">🔗</div>
+            <div class="pact-l">Реферальная ссылка</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="goTab('support')">
+            <div class="pact-i" style="background:rgba(139,92,246,0.12)">💬</div>
+            <div class="pact-l">Поддержка</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact" onclick="toast('Уведомления')">
+            <div class="pact-i" style="background:rgba(255,255,255,0.06)">🔔</div>
+            <div class="pact-l">Уведомления</div><div class="pact-a">›</div>
+          </div>
+          <div class="pact danger" onclick="toast('Выход')">
+            <div class="pact-i" style="background:rgba(244,63,94,0.12)">🚪</div>
+            <div class="pact-l">Выйти</div><div class="pact-a">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ПОДДЕРЖКА ══ -->
+    <div class="screen" id="s-support">
+      <div class="ch-head">
+        <div class="ch-ava">🎰</div>
+        <div class="ch-info"><b>АПРИ · Поддержка</b><span>● Онлайн</span></div>
+      </div>
+      <div class="ch-msgs" id="chatMsgs">
+        <div class="cm ag"><div class="cm-t">Здравствуйте, Мария! Я консультант программы «Большой розыгрыш». Чем могу помочь?</div><div class="cm-d">12:30</div></div>
+        <div class="cm me"><div class="cm-t">Когда следующий розыгрыш?</div><div class="cm-d">12:31</div></div>
+        <div class="cm ag"><div class="cm-t">Следующий розыгрыш состоится 15 марта в 12:00 МСК. Трансляция будет в приложении и на YouTube. У вас уже 18 билетов — отличные шансы!</div><div class="cm-d">12:31</div></div>
+      </div>
+      <div class="ch-qr">
+        <div class="qr" onclick="sendQR('Правила розыгрыша')">Правила</div>
+        <div class="qr" onclick="sendQR('Как получить билеты?')">Билеты</div>
+        <div class="qr" onclick="sendQR('Прошлые победители')">Победители</div>
+      </div>
+      <div class="ch-inp">
+        <input type="text" id="chatInput" placeholder="Напишите сообщение..." />
+        <button class="ch-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn on" id="bn-home" onclick="goTab('home')"><div class="i">🏠</div><div class="l">Главная</div></div>
+    <div class="bn" id="bn-tickets" onclick="goTab('tickets')"><div class="i">🎫</div><div class="l">Билеты</div></div>
+    <div class="bn" id="bn-prizes" onclick="goTab('prizes')"><div class="i">🎁</div><div class="l">Призы</div></div>
+    <div class="bn" id="bn-ref" onclick="goTab('ref')"><div class="i">👥</div><div class="l">Друзья</div></div>
+    <div class="bn" id="bn-profile" onclick="goTab('profile')"><div class="i">👤</div><div class="l">Профиль</div></div>
+  </div>
+  <div class="home-ind"><div class="home-bar"></div></div>
+
+  <div class="toast" id="toastEl"></div>
+</div>
+
+<script>
+  function goTab(name) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.bn').forEach(function(b) { b.classList.remove('on'); });
+    var el = document.getElementById('s-' + name);
+    if (el) el.classList.add('active');
+    var bn = document.getElementById('bn-' + name);
+    if (bn) bn.classList.add('on');
+    if (name === 'support') {
+      document.getElementById('s-support').classList.add('active');
+      document.getElementById('bn-profile').classList.add('on');
+      setTimeout(function() { document.getElementById('chatMsgs').scrollTop = 99999; }, 100);
+    }
+    if (name === 'winners') {
+      document.getElementById('s-winners').classList.add('active');
+      document.getElementById('bn-prizes').classList.add('on');
+    }
+  }
+
+  function toast(msg) {
+    var t = document.getElementById('toastEl');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(function() { t.classList.remove('show'); }, 1800);
+  }
+
+  function sendChat() {
+    var inp = document.getElementById('chatInput');
+    var msg = inp.value.trim();
+    if (!msg) return;
+    var area = document.getElementById('chatMsgs');
+    var now = new Date();
+    var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    area.innerHTML += '<div class="cm me"><div class="cm-t">' + msg + '</div><div class="cm-d">' + time + '</div></div>';
+    inp.value = '';
+    area.scrollTop = 99999;
+    setTimeout(function() {
+      area.innerHTML += '<div class="cm ag"><div class="cm-t">Спасибо за вопрос! Уточню информацию и вернусь с ответом.</div><div class="cm-d">' + time + '</div></div>';
+      area.scrollTop = 99999;
+    }, 1200);
+  }
+
+  function sendQR(text) {
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  // Countdown timer
+  function startTimer() {
+    var end = new Date();
+    end.setDate(end.getDate() + 12);
+    end.setHours(end.getHours() + 8);
+    function tick() {
+      var now = new Date();
+      var diff = end - now;
+      if (diff <= 0) return;
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor((diff % 86400000) / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      document.getElementById('td').textContent = String(d).padStart(2,'0');
+      document.getElementById('th').textContent = String(h).padStart(2,'0');
+      document.getElementById('tm').textContent = String(m).padStart(2,'0');
+      document.getElementById('ts').textContent = String(s).padStart(2,'0');
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+  startTimer();
+</script>
+</body>
+</html>

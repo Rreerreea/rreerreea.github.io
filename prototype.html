@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>George — UX/UI Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #e8d5b7; overflow: hidden; height: 100vh; width: 100vw;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    cursor: default; user-select: none;
+  }
+  #scene-canvas { position: fixed; inset: 0; z-index: 1; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(6px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 20px; padding: 40px;
+    max-width: 620px; width: 90%; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    animation: modalIn 0.3s ease-out;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.92) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal h2 { font-size: 24px; margin-bottom: 16px; color: #111; }
+  .modal p { color: #555; line-height: 1.7; margin-bottom: 10px; font-size: 15px; }
+  .modal-close {
+    float: right; background: #f3f4f6; border: none;
+    width: 34px; height: 34px; border-radius: 50%; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: #e5e7eb; }
+  .case-list { list-style: none; padding: 0; margin: 12px 0; }
+  .case-list li {
+    padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
+    color: #333; font-size: 15px;
+  }
+  .case-list li:hover { background: #f0f0ff; border-color: #818cf8; color: #4338ca; }
+  .case-list li span { color: #999; font-size: 13px; display: block; margin-top: 2px; }
+
+  .controls-hint {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); color: #fff; padding: 10px 20px;
+    border-radius: 14px; font-size: 13px; display: flex; gap: 16px;
+    z-index: 50; transition: opacity 0.8s; backdrop-filter: blur(8px);
+  }
+  .controls-hint kbd {
+    background: rgba(255,255,255,0.15); padding: 2px 7px;
+    border-radius: 4px; font-family: inherit; font-size: 12px;
+  }
+  .name-badge {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    color: rgba(120,100,70,0.5); font-size: 14px; font-weight: 500;
+    z-index: 50; letter-spacing: 0.5px;
+  }
+  .name-badge strong { color: rgba(100,80,50,0.7); font-size: 16px; }
+  #loading {
+    position: fixed; inset: 0; background: #e8d5b7;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000; color: #8a7560; font-size: 16px; transition: opacity 0.5s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  #debug-info {
+    position: fixed; top: 60px; left: 12px;
+    color: rgba(100,80,50,0.5); font-size: 11px; font-family: monospace;
+    z-index: 50; display: none;
+  }
+  body.debug #debug-info { display: block; }
+</style>
+</head>
+<body>
+
+<div id="loading">Загрузка...</div>
+<div class="name-badge"><strong>George</strong> — UX/UI Designer</div>
+<canvas id="scene-canvas"></canvas>
+
+<div class="controls-hint" id="hint">
+  <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Ехать</span>
+  <span><kbd>Пробел</kbd> Тормоз</span>
+  <span><kbd>Shift</kbd> Буст</span>
+  <span><kbd>E</kbd> Открыть</span>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div id="debug-info"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ═══════════════════════════════════════════
+// OUTLINE SHADER
+// ═══════════════════════════════════════════
+const OutlineShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    lineWidth: { value: 1.0 },
+    lineColor: { value: new THREE.Vector3(0.15, 0.12, 0.2) },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform vec2 resolution; uniform float lineWidth; uniform vec3 lineColor;
+    varying vec2 vUv;
+    float lum(vec4 c){ return dot(c.rgb,vec3(0.299,0.587,0.114)); }
+    void main(){
+      vec2 t=vec2(lineWidth)/resolution;
+      float tl=lum(texture2D(tDiffuse,vUv+vec2(-t.x,t.y)));
+      float tt=lum(texture2D(tDiffuse,vUv+vec2(0,t.y)));
+      float tr=lum(texture2D(tDiffuse,vUv+vec2(t.x,t.y)));
+      float l=lum(texture2D(tDiffuse,vUv+vec2(-t.x,0)));
+      float r=lum(texture2D(tDiffuse,vUv+vec2(t.x,0)));
+      float bl=lum(texture2D(tDiffuse,vUv+vec2(-t.x,-t.y)));
+      float bb=lum(texture2D(tDiffuse,vUv+vec2(0,-t.y)));
+      float br=lum(texture2D(tDiffuse,vUv+vec2(t.x,-t.y)));
+      float sx=tl+2.0*l+bl-tr-2.0*r-br;
+      float sy=tl+2.0*tt+tr-bl-2.0*bb-br;
+      float e=smoothstep(0.05,0.25,sqrt(sx*sx+sy*sy));
+      vec4 c=texture2D(tDiffuse,vUv);
+      c.rgb=mix(c.rgb,lineColor,e*0.7);
+      gl_FragColor=c;
+    }`
+};
+
+// ═══════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════
+const hint = document.getElementById('hint');
+const modalOverlay = document.getElementById('modal-overlay');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const canvas = document.getElementById('scene-canvas');
+const loadingEl = document.getElementById('loading');
+const debugInfo = document.getElementById('debug-info');
+
+// ═══════════════════════════════════════════
+// RENDERER
+// ═══════════════════════════════════════════
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+// ═══════════════════════════════════════════
+// TOON SYSTEM
+// ═══════════════════════════════════════════
+const toonGradient = new THREE.DataTexture(
+  new Uint8Array([180, 220, 255]), 3, 1, THREE.LuminanceFormat
+);
+toonGradient.minFilter = THREE.NearestFilter;
+toonGradient.magFilter = THREE.NearestFilter;
+toonGradient.needsUpdate = true;
+
+function toToon(obj) {
+  obj.traverse(c => {
+    if (!c.isMesh || !c.material) return;
+    const mats = Array.isArray(c.material) ? c.material : [c.material];
+    const newMats = mats.map(m => {
+      if (m.emissive && m.emissive.r + m.emissive.g + m.emissive.b > 0.1) return m;
+      if (m.map) return m;
+      return new THREE.MeshToonMaterial({ color: m.color || new THREE.Color(0xcccccc), gradientMap: toonGradient, side: m.side });
+    });
+    c.material = Array.isArray(c.material) ? newMats : newMats[0];
+  });
+}
+
+function addShadows(m) { m.castShadow = true; m.receiveShadow = true; return m; }
+
+// ═══════════════════════════════════════════
+// SCENE + CAMERA
+// ═══════════════════════════════════════════
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe8d5b7);
+scene.fog = new THREE.Fog(0xe8d5b7, 60, 110);
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 80);
+camera.position.set(0, 35, 45);
+
+const orbitControls = new OrbitControls(camera, canvas);
+orbitControls.enableDamping = true;
+orbitControls.dampingFactor = 0.1;
+orbitControls.enabled = false;
+canvas.style.pointerEvents = 'none';
+let orbitMode = false;
+
+// ═══════════════════════════════════════════
+// POST-PROCESSING
+// ═══════════════════════════════════════════
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+// ═══════════════════════════════════════════
+// LIGHTS
+// ═══════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+keyLight.position.set(-8, 25, 8);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(1024, 1024);
+keyLight.shadow.camera.near = 1;
+keyLight.shadow.camera.far = 60;
+keyLight.shadow.camera.left = -22;
+keyLight.shadow.camera.right = 22;
+keyLight.shadow.camera.top = 22;
+keyLight.shadow.camera.bottom = -22;
+keyLight.shadow.bias = -0.002;
+scene.add(keyLight);
+scene.add(keyLight.target);
+
+// ═══════════════════════════════════════════
+// PHYSICS WORLD
+// ═══════════════════════════════════════════
+const world = new CANNON.World();
+world.gravity.set(0, -10, 0);
+world.allowSleep = true;
+world.broadphase = new CANNON.SAPBroadphase(world);
+
+const floorMaterial = new CANNON.Material('floor');
+const wheelMaterial = new CANNON.Material('wheel');
+const dummyMaterial = new CANNON.Material('dummy');
+
+world.defaultContactMaterial.friction = 0;
+world.defaultContactMaterial.restitution = 0.2;
+
+world.addContactMaterial(new CANNON.ContactMaterial(floorMaterial, dummyMaterial, {
+  friction: 0.05, restitution: 0.3, contactEquationStiffness: 1000,
+}));
+world.addContactMaterial(new CANNON.ContactMaterial(dummyMaterial, dummyMaterial, {
+  friction: 0.5, restitution: 0.3, contactEquationStiffness: 1000,
+}));
+world.addContactMaterial(new CANNON.ContactMaterial(floorMaterial, wheelMaterial, {
+  friction: 0.3, restitution: 0, contactEquationStiffness: 1000,
+}));
+
+// ═══════════════════════════════════════════
+// DESK (28×28) + WALLS
+// ═══════════════════════════════════════════
+const DESK_SIZE = 28;
+const DESK_HALF = DESK_SIZE / 2;
+const WALL_H = 0.6;
+const WALL_THICK = 0.3;
+
+const deskMesh = addShadows(new THREE.Mesh(
+  new THREE.BoxGeometry(DESK_SIZE, 0.4, DESK_SIZE),
+  new THREE.MeshToonMaterial({ color: 0xd4b896, gradientMap: toonGradient })
+));
+deskMesh.position.y = -0.2;
+deskMesh.receiveShadow = true;
+scene.add(deskMesh);
+
+const edgeMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(DESK_SIZE + 0.3, 0.12, DESK_SIZE + 0.3),
+  new THREE.MeshToonMaterial({ color: 0xc4a87a, gradientMap: toonGradient })
+);
+edgeMesh.position.y = -0.42;
+edgeMesh.receiveShadow = true;
+scene.add(edgeMesh);
+
+// Desk legs
+const legGeo = new THREE.CylinderGeometry(0.35, 0.35, 3, 8);
+const legMat = new THREE.MeshToonMaterial({ color: 0xc4a87a, gradientMap: toonGradient });
+const lOff = DESK_HALF - 1;
+[[-lOff,-lOff],[lOff,-lOff],[-lOff,lOff],[lOff,lOff]].forEach(([x,z]) => {
+  const leg = addShadows(new THREE.Mesh(legGeo, legMat));
+  leg.position.set(x, -1.9, z);
+  scene.add(leg);
+});
+
+// Physics desk
+const deskBody = new CANNON.Body({
+  type: CANNON.Body.STATIC,
+  shape: new CANNON.Box(new CANNON.Vec3(DESK_HALF, 0.2, DESK_HALF)),
+  position: new CANNON.Vec3(0, -0.2, 0),
+  material: floorMaterial,
+});
+world.addBody(deskBody);
+
+// ─── WALLS (visual + physics) ───
+const wallMat = new THREE.MeshToonMaterial({ color: 0xc4a87a, gradientMap: toonGradient });
+const wallConfigs = [
+  { px: 0,         pz: -DESK_HALF, sx: DESK_SIZE, sz: WALL_THICK },  // back
+  { px: 0,         pz:  DESK_HALF, sx: DESK_SIZE, sz: WALL_THICK },  // front
+  { px: -DESK_HALF, pz: 0,         sx: WALL_THICK, sz: DESK_SIZE },  // left
+  { px:  DESK_HALF, pz: 0,         sx: WALL_THICK, sz: DESK_SIZE },  // right
+];
+wallConfigs.forEach(({ px, pz, sx, sz }) => {
+  const mesh = addShadows(new THREE.Mesh(
+    new THREE.BoxGeometry(sx, WALL_H, sz), wallMat
+  ));
+  mesh.position.set(px, WALL_H / 2, pz);
+  scene.add(mesh);
+
+  const body = new CANNON.Body({
+    type: CANNON.Body.STATIC,
+    shape: new CANNON.Box(new CANNON.Vec3(sx / 2, WALL_H / 2, sz / 2)),
+    position: new CANNON.Vec3(px, WALL_H / 2, pz),
+    material: dummyMaterial,
+  });
+  world.addBody(body);
+});
+
+// ═══════════════════════════════════════════
+// SYNC ARRAYS
+// ═══════════════════════════════════════════
+const dynamicObjects = [];
+const pinData = [];
+const blockData = [];
+
+// ═══════════════════════════════════════════
+// HELPER: create pushable object
+// ═══════════════════════════════════════════
+function makePushable(group, shape, mass, px, py, pz, ry = 0) {
+  scene.add(group);
+  group.position.set(px, py, pz);
+  if (ry !== 0) group.rotation.y = ry;
+  const body = new CANNON.Body({
+    mass, shape,
+    position: new CANNON.Vec3(px, py, pz),
+    allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 1,
+  });
+  if (ry !== 0) body.quaternion.setFromEuler(0, ry, 0);
+  world.addBody(body);
+  dynamicObjects.push({ mesh: group, body });
+  return body;
+}
+
+// ═══════════════════════════════════════════
+// GLTF LOADER (declared early — used by desk objects)
+// ═══════════════════════════════════════════
+const loader = new GLTFLoader();
+
+// ═══════════════════════════════════════════
+// DESK OBJECTS
+// ═══════════════════════════════════════════
+
+// --- Coffee Mug ---
+(function() {
+  const g = new THREE.Group();
+  g.add(addShadows(new THREE.Mesh(
+    new THREE.CylinderGeometry(0.45, 0.4, 1.1, 16),
+    new THREE.MeshStandardMaterial({ color: 0xf5e6d3, roughness: 0.4 })
+  )));
+  const heart = addShadows(new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xe88fa0 })
+  ));
+  heart.position.set(0.42, 0.05, 0); heart.scale.set(1, 1.2, 0.5);
+  g.add(heart);
+  const coffee = new THREE.Mesh(
+    new THREE.CircleGeometry(0.38, 16),
+    new THREE.MeshStandardMaterial({ color: 0x7a5c2a })
+  );
+  coffee.rotation.x = -Math.PI / 2; coffee.position.y = 0.5;
+  g.add(coffee);
+  const handle = addShadows(new THREE.Mesh(
+    new THREE.TorusGeometry(0.22, 0.06, 8, 12, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0xf5e6d3 })
+  ));
+  handle.rotation.y = Math.PI / 2; handle.rotation.z = Math.PI / 2;
+  handle.position.set(0.55, 0, 0);
+  g.add(handle);
+  makePushable(g, new CANNON.Cylinder(0.45, 0.4, 1.1, 8), 1, -1.6, 0.55, -10);
+})();
+
+// --- Pencils (GLB) ---
+loader.load('/pencils.glb', (gltf) => {
+  const model = gltf.scene;
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 3 / Math.max(size.x, size.y, size.z);
+  model.scale.setScalar(scale);
+
+  const sBox = new THREE.Box3().setFromObject(model);
+  const center = sBox.getCenter(new THREE.Vector3());
+  model.position.set(-center.x, -sBox.min.y, -center.z);
+
+  const g = new THREE.Group();
+  g.add(model);
+  g.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+
+  const fBox = new THREE.Box3().setFromObject(g);
+  const fSize = fBox.getSize(new THREE.Vector3());
+  makePushable(g, new CANNON.Box(new CANNON.Vec3(fSize.x/2, fSize.y/2, fSize.z/2)), 1.5, 8, fSize.y/2, -8);
+  checkAllLoaded();
+}, undefined, (err) => { console.error('Pencils:', err); checkAllLoaded(); });
+
+// --- Succulent Plant ---
+(function() {
+  const g = new THREE.Group();
+  g.add(addShadows(new THREE.Mesh(
+    new THREE.CylinderGeometry(0.6, 0.5, 0.8, 16),
+    new THREE.MeshStandardMaterial({ color: 0xc4714a, roughness: 0.7 })
+  )));
+  const soil = new THREE.Mesh(
+    new THREE.CircleGeometry(0.55, 16),
+    new THREE.MeshStandardMaterial({ color: 0x6d4b3f })
+  );
+  soil.rotation.x = -Math.PI / 2; soil.position.y = 0.4;
+  g.add(soil);
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x7cb68a, roughness: 0.6 });
+  for (let i = 0; i < 8; i++) {
+    const leaf = addShadows(new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), leafMat));
+    const a = (i / 8) * Math.PI * 2;
+    leaf.scale.set(1, 0.6, 1.5);
+    leaf.position.set(Math.cos(a) * 0.28, 0.55, Math.sin(a) * 0.28);
+    leaf.rotation.y = a; leaf.rotation.x = -0.3;
+    g.add(leaf);
+  }
+  const top = addShadows(new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), leafMat));
+  top.position.y = 0.75; g.add(top);
+  makePushable(g, new CANNON.Cylinder(0.6, 0.5, 1.2, 8), 2, 2.4, 0.6, -10);
+})();
+
+// --- Sketchbook (GLB) ---
+loader.load('/sketchbook.glb', (gltf) => {
+  const model = gltf.scene;
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 4 / Math.max(size.x, size.y, size.z);
+  model.scale.setScalar(scale);
+
+  const sBox = new THREE.Box3().setFromObject(model);
+  const center = sBox.getCenter(new THREE.Vector3());
+  model.position.set(-center.x, -sBox.min.y, -center.z);
+
+  const g = new THREE.Group();
+  g.add(model);
+  g.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+
+  const fBox = new THREE.Box3().setFromObject(g);
+  const fSize = fBox.getSize(new THREE.Vector3());
+  makePushable(g, new CANNON.Box(new CANNON.Vec3(fSize.x/2, fSize.y/2, fSize.z/2)), 0.5, -9, fSize.y/2, -8, 0.2);
+  checkAllLoaded();
+}, undefined, (err) => { console.error('Sketchbook:', err); checkAllLoaded(); });
+
+// --- Phone (GLB) ---
+loader.load('/phone.glb', (gltf) => {
+  const model = gltf.scene;
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 2 / Math.max(size.x, size.y, size.z);
+  model.scale.setScalar(scale);
+
+  const sBox = new THREE.Box3().setFromObject(model);
+  const center = sBox.getCenter(new THREE.Vector3());
+  model.position.set(-center.x, -sBox.min.y, -center.z);
+
+  const g = new THREE.Group();
+  g.add(model);
+  g.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+
+  const fBox = new THREE.Box3().setFromObject(g);
+  const fSize = fBox.getSize(new THREE.Vector3());
+  makePushable(g, new CANNON.Box(new CANNON.Vec3(fSize.x/2, fSize.y/2, fSize.z/2)), 0.3, 9, fSize.y/2, 8, -0.3);
+  checkAllLoaded();
+}, undefined, (err) => { console.error('Phone:', err); checkAllLoaded(); });
+
+// --- Sticky Notes ---
+const stickyColors = [0xfde68a, 0xa5d8ff, 0xfca5a5, 0xbbf7d0];
+[{ dx: -1, dz: -1, r: -0.1 }, { dx: 1, dz: -0.5, r: 0.15 },
+ { dx: 2.5, dz: 0.5, r: -0.05 }, { dx: 0, dz: 1, r: 0.2 }]
+.forEach((off, i) => {
+  const g = new THREE.Group();
+  g.add(addShadows(new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 0.03, 1.4),
+    new THREE.MeshStandardMaterial({ color: stickyColors[i], roughness: 0.9 })
+  )));
+  makePushable(g, new CANNON.Box(new CANNON.Vec3(0.7, 0.02, 0.7)), 0.1,
+    -9 + off.dx, 0.02 + i * 0.015, 8 + off.dz, off.r);
+});
+
+// --- Drawing Tablet ---
+(function() {
+  const g = new THREE.Group();
+  g.add(addShadows(new THREE.Mesh(
+    new THREE.BoxGeometry(3.0, 0.15, 2.5),
+    new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.4, metalness: 0.3 })
+  )));
+  const area = new THREE.Mesh(
+    new THREE.BoxGeometry(2.4, 0.005, 1.8),
+    new THREE.MeshStandardMaterial({ color: 0x5a5a7e, roughness: 0.5 })
+  );
+  area.position.y = 0.08; g.add(area);
+  const stylus = addShadows(new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.02, 2.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 })
+  ));
+  stylus.rotation.z = Math.PI / 2;
+  stylus.position.set(1.8, 0.08, 0.5);
+  g.add(stylus);
+  makePushable(g, new CANNON.Box(new CANNON.Vec3(1.5, 0.1, 1.25)), 1, 10, 0.1, -6, -0.1);
+})();
+
+// ═══════════════════════════════════════════
+// BOWLING PINS (InstancedMesh)
+// ═══════════════════════════════════════════
+function triPositions(cx, cz, spacing, rows) {
+  const p = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c <= r; c++)
+      p.push({ x: cx + (c - r / 2) * spacing, z: cz + r * spacing });
+  return p;
+}
+
+const allPins = [
+  ...triPositions(5, 4, 0.7, 3),
+  ...triPositions(-5, -4, 0.7, 3),
+  ...triPositions(-6, 3, 0.7, 3),
+];
+const PIN_COUNT = allPins.length;
+
+const pinGeo = new THREE.CylinderGeometry(0.1, 0.16, 0.7, 8);
+const pinMat = new THREE.MeshToonMaterial({ color: 0xfaf0e6, gradientMap: toonGradient });
+const pinMesh = new THREE.InstancedMesh(pinGeo, pinMat, PIN_COUNT);
+pinMesh.castShadow = true; pinMesh.receiveShadow = true;
+scene.add(pinMesh);
+
+const stripeGeo = new THREE.CylinderGeometry(0.115, 0.13, 0.08, 8);
+const stripeMat = new THREE.MeshToonMaterial({ color: 0xdd3333, gradientMap: toonGradient });
+const stripeMesh = new THREE.InstancedMesh(stripeGeo, stripeMat, PIN_COUNT);
+scene.add(stripeMesh);
+
+const _dummy = new THREE.Object3D();
+allPins.forEach((pos, i) => {
+  const body = new CANNON.Body({
+    mass: 0.3,
+    shape: new CANNON.Cylinder(0.1, 0.16, 0.7, 8),
+    position: new CANNON.Vec3(pos.x, 0.35, pos.z),
+    allowSleep: true, sleepSpeedLimit: 0.1, sleepTimeLimit: 1,
+  });
+  world.addBody(body);
+  pinData.push({ body, alive: true });
+  _dummy.position.set(pos.x, 0.35, pos.z);
+  _dummy.rotation.set(0, 0, 0); _dummy.scale.set(1, 1, 1);
+  _dummy.updateMatrix();
+  pinMesh.setMatrixAt(i, _dummy.matrix);
+  _dummy.position.y = 0.45;
+  _dummy.updateMatrix();
+  stripeMesh.setMatrixAt(i, _dummy.matrix);
+});
+pinMesh.instanceMatrix.needsUpdate = true;
+stripeMesh.instanceMatrix.needsUpdate = true;
+
+// ═══════════════════════════════════════════
+// COLORED BLOCKS (InstancedMesh)
+// ═══════════════════════════════════════════
+const BLOCK_COUNT = 25;
+const bColors = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 0xf38181, 0xaa96da, 0xfcbad3, 0xa8d8ea];
+const blockGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+const blockMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGradient });
+const blockMesh = new THREE.InstancedMesh(blockGeo, blockMat, BLOCK_COUNT);
+blockMesh.castShadow = true; blockMesh.receiveShadow = true;
+scene.add(blockMesh);
+
+const _col = new THREE.Color();
+for (let i = 0; i < BLOCK_COUNT; i++) {
+  const x = (Math.random() - 0.5) * 22;
+  const z = (Math.random() - 0.5) * 22;
+  const body = new CANNON.Body({
+    mass: 0.2,
+    shape: new CANNON.Box(new CANNON.Vec3(0.3, 0.3, 0.3)),
+    position: new CANNON.Vec3(x, 0.3, z),
+    allowSleep: true, sleepSpeedLimit: 0.1, sleepTimeLimit: 1,
+  });
+  body.quaternion.setFromEuler(0, Math.random() * Math.PI, 0);
+  world.addBody(body);
+  blockData.push({ body, alive: true });
+
+  _dummy.position.set(x, 0.3, z);
+  _dummy.rotation.set(0, Math.random() * Math.PI, 0);
+  _dummy.scale.set(1, 1, 1);
+  _dummy.updateMatrix();
+  blockMesh.setMatrixAt(i, _dummy.matrix);
+  _col.setHex(bColors[i % bColors.length]);
+  blockMesh.setColorAt(i, _col);
+}
+blockMesh.instanceMatrix.needsUpdate = true;
+blockMesh.instanceColor.needsUpdate = true;
+
+// ═══════════════════════════════════════════
+// GROUND LABELS
+// ═══════════════════════════════════════════
+function makeGroundLabel(text) {
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 128;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, 512, 128);
+  ctx.fillStyle = 'rgba(100,80,50,0.15)';
+  ctx.font = 'bold 60px -apple-system, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(cv);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(8, 2),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = 0.02;
+  return mesh;
+}
+
+const groundLabels = [
+  { text: 'КЕЙСЫ', x: 0, z: 3 },
+  { text: 'ОБО МНЕ', x: -9, z: -5 },
+  { text: 'НАВЫКИ', x: -9, z: 9 },
+  { text: 'ИНСТРУМЕНТЫ', x: 9, z: -5 },
+  { text: 'КОНТАКТЫ', x: 9, z: 9 },
+];
+const groundLabelMeshes = groundLabels.map(({ text, x, z }) => {
+  const m = makeGroundLabel(text);
+  m.position.x = x; m.position.z = z;
+  scene.add(m);
+  return { mesh: m, baseX: x, baseZ: z };
+});
+
+// ═══════════════════════════════════════════
+// BILLBOARD SPRITES
+// ═══════════════════════════════════════════
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function makeSprite(text) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 80;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  rrect(ctx, 4, 4, 248, 72, 14); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, 128, 35);
+  ctx.font = '14px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('E — открыть', 128, 58);
+  const tex = new THREE.CanvasTexture(cv);
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false })
+  );
+  sprite.scale.set(3.5, 1.1, 1);
+  sprite.visible = false;
+  scene.add(sprite);
+  return sprite;
+}
+
+// ═══════════════════════════════════════════
+// INTERACTIVE ZONES
+// ═══════════════════════════════════════════
+const interactiveZones = [
+  { id: 'macbook',  label: 'Кейсы',          x: 0,    z: 0,     radius: 4,   content: 'macbook' },
+  { id: 'notebook', label: 'Обо мне',        x: -9,   z: -8,    radius: 3,   content: 'about' },
+  { id: 'stickers', label: 'Навыки',         x: -9,   z: 8,     radius: 3,   content: 'stickers' },
+  { id: 'tools',    label: 'Инструменты',    x: 10,   z: -6,    radius: 3,   content: 'tools' },
+  { id: 'phone',    label: 'Контакты',       x: 9,    z: 8,     radius: 2.5, content: 'contacts' },
+  { id: 'mug',      label: 'Кофе-брейк',     x: -1.6, z: -10,   radius: 2,   content: 'coffee' },
+  { id: 'plant',    label: 'Суккулент',       x: 2.4,  z: -10,   radius: 2,   content: 'plant' },
+];
+interactiveZones.forEach(zone => { zone.sprite = makeSprite(zone.label); });
+
+// ═══════════════════════════════════════════
+// CAR — Manual movement + Bruno-style feel
+// ═══════════════════════════════════════════
+let carModel = null;
+let macbookModel = null;
+let modelsLoaded = 0;
+
+const car = {
+  x: 0, z: 10, y: 0,
+  angle: Math.PI,       // radians (facing -Z = toward center)
+  speed: 0,
+  maxSpeed: 0.22,
+  maxSpeedBoost: 0.38,
+  accel: 0.012,
+  decel: 0.94,          // friction when coasting
+  brakeDecel: 0.88,     // friction when braking
+  steer: 0,             // current steering angle
+  steerSpeed: 0.0012,   // radians per ms
+  steerMax: 0.045,      // max turn per frame
+  steerReturn: 2.5,     // self-centering multiplier
+};
+
+// Physics body — kinematic-like, pushes objects
+const carBody = new CANNON.Body({
+  mass: 50,
+  material: dummyMaterial,
+  shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.35, 0.85)),
+  position: new CANNON.Vec3(0, 0.35, 10),
+  fixedRotation: true,
+  linearDamping: 0.95,
+});
+world.addBody(carBody);
+
+// ═══════════════════════════════════════════
+// MODEL LOADING
+// ═══════════════════════════════════════════
+function checkAllLoaded() {
+  modelsLoaded++;
+  if (modelsLoaded >= 2) {
+    loadingEl.classList.add('hidden');
+    gameState = 'playing';
+  }
+}
+// Fallback: force start after 8 seconds even if models fail
+setTimeout(() => {
+  if (gameState === 'loading') {
+    console.warn('Force-starting after timeout');
+    loadingEl.classList.add('hidden');
+    gameState = 'playing';
+  }
+}, 8000);
+
+// MacBook — static physics body
+loader.load('/macbook.glb', (gltf) => {
+  macbookModel = gltf.scene;
+  const box = new THREE.Box3().setFromObject(macbookModel);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 8 / Math.max(size.x, size.y, size.z);
+  macbookModel.scale.setScalar(scale);
+
+  const sBox = new THREE.Box3().setFromObject(macbookModel);
+  const center = sBox.getCenter(new THREE.Vector3());
+  macbookModel.position.x -= center.x;
+  macbookModel.position.z -= center.z;
+  macbookModel.position.y -= sBox.min.y;
+  macbookModel.rotation.y = 0.15;
+
+  macbookModel.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+  scene.add(macbookModel);
+
+  const fBox = new THREE.Box3().setFromObject(macbookModel);
+  const fSize = fBox.getSize(new THREE.Vector3());
+  const fCenter = fBox.getCenter(new THREE.Vector3());
+  const macBody = new CANNON.Body({
+    type: CANNON.Body.STATIC,
+    shape: new CANNON.Box(new CANNON.Vec3(fSize.x / 2, fSize.y / 2, fSize.z / 2)),
+    position: new CANNON.Vec3(fCenter.x, fCenter.y, fCenter.z),
+  });
+  macBody.quaternion.setFromEuler(0, 0.15, 0);
+  world.addBody(macBody);
+  checkAllLoaded();
+}, (p) => {
+  if (p.total > 0) loadingEl.textContent = `MacBook... ${Math.round(p.loaded/p.total*100)}%`;
+}, (err) => { console.error('MacBook:', err); checkAllLoaded(); });
+
+// Car model
+loader.load('/bmw-m3.glb', (gltf) => {
+  const carScene = gltf.scene;
+  const box = new THREE.Box3().setFromObject(carScene);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 1.5 / Math.max(size.x, size.y, size.z);
+  carScene.scale.setScalar(scale);
+
+  const sBox = new THREE.Box3().setFromObject(carScene);
+  const center = sBox.getCenter(new THREE.Vector3());
+  carScene.position.set(-center.x, -sBox.min.y, -center.z);
+
+  carModel = new THREE.Group();
+  carModel.add(carScene);
+  carModel.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+  scene.add(carModel);
+  checkAllLoaded();
+}, undefined, (err) => { console.error('Car:', err); checkAllLoaded(); });
+
+// ═══════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════
+const keys = {};
+let modalOpen = false;
+let nearbyZone = null;
+
+window.addEventListener('keydown', e => {
+  if (modalOpen) { if (e.key === 'Escape') closeModal(); return; }
+  keys[e.key] = true;
+  if (e.key === 'e' || e.key === 'у' || e.key === 'Enter') { e.preventDefault(); interact(); }
+  if (e.key === ' ') e.preventDefault();
+  if (e.key === '`') document.body.classList.toggle('debug');
+  if (e.key === 'o') {
+    orbitMode = !orbitMode;
+    orbitControls.enabled = orbitMode;
+    canvas.style.pointerEvents = orbitMode ? 'auto' : 'none';
+  }
+});
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  // space handled in update loop
+});
+
+window.addEventListener('wheel', e => {
+  if (orbitMode) return;
+  zoomDist = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomDist + e.deltaY * 0.02));
+});
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ═══════════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════════
+const modalContents = {
+  macbook: `<h2>Кейсы</h2>
+    <p>Проекты из портфолио:</p>
+    <ul class="case-list">
+      <li>FUN&SUN<span>Ускорил оформление туров и обновил бренд</span></li>
+      <li>ПрезиДЕНТ<span>Единая цифровая экосистема сети клиник</span></li>
+      <li>Лучи<span>Повышение конверсии через self-service калькуляторы</span></li>
+      <li>Nikta AI<span>AI-платформа</span></li>
+      <li>Аномалия<span>Мобильное приложение</span></li>
+      <li>Рецепт<span>Сервис рецептов</span></li>
+      <li>OneTwoTrip<span>Тревел-сервис</span></li>
+      <li>DDX Fitness<span>Фитнес-приложение</span></li>
+    </ul>`,
+  about: `<h2>Обо мне</h2>
+    <p>George — UX/UI дизайнер.</p>
+    <p>Проектирую пользовательские интерфейсы, провожу исследования, строю дизайн-системы.</p>`,
+  contacts: `<h2>Контакты</h2>
+    <p>Telegram: @george</p>
+    <p>Email: george@example.com</p>`,
+  tools: `<h2>Инструменты</h2>
+    <p>• Figma — основной</p>
+    <p>• Miro — для воркшопов</p>
+    <p>• Notion — документация</p>
+    <p>• Wacom — скетчи и прототипирование</p>`,
+  stickers: `<h2>Навыки</h2>
+    <p>• Figma, Sketch, Adobe XD</p>
+    <p>• User Research & Usability Testing</p>
+    <p>• Prototyping & Interaction Design</p>
+    <p>• Design Systems</p>`,
+  coffee: `<h2>Кофе-брейк ☕</h2>
+    <p>Спасибо что заглянул! Если хочешь обсудить проект — напиши мне.</p>`,
+  plant: `<h2>Суккулент 🌱</h2>
+    <p>Единственный коллега, который не спорит с моими дизайн-решениями.</p>`,
+};
+
+function interact() {
+  if (nearbyZone && modalContents[nearbyZone.content]) {
+    modalBody.innerHTML = modalContents[nearbyZone.content];
+    modalOverlay.classList.add('open');
+    modalOpen = true;
+  }
+}
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  modalOpen = false;
+}
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+// ═══════════════════════════════════════════
+// SMOKE PARTICLES
+// ═══════════════════════════════════════════
+const SMOKE_MAX = 30;
+const smokePool = [];
+const _smokeGeo = new THREE.SphereGeometry(0.12, 6, 4);
+
+for (let i = 0; i < SMOKE_MAX; i++) {
+  const mat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0, depthWrite: false });
+  const m = new THREE.Mesh(_smokeGeo, mat);
+  m.visible = false;
+  scene.add(m);
+  smokePool.push({ mesh: m, life: 0, vx: 0, vy: 0, vz: 0, maxLife: 1 });
+}
+
+function emitSmoke(x, y, z) {
+  const p = smokePool.find(s => s.life <= 0);
+  if (!p) return;
+  p.mesh.visible = true;
+  p.mesh.position.set(x, y + 0.1, z);
+  p.mesh.scale.setScalar(0.3);
+  p.mesh.material.opacity = 0.5;
+  p.life = 1;
+  p.maxLife = 0.6 + Math.random() * 0.4;
+  p.vx = (Math.random() - 0.5) * 2;
+  p.vy = 0.5 + Math.random() * 1;
+  p.vz = (Math.random() - 0.5) * 2;
+}
+
+// ═══════════════════════════════════════════
+// GAME STATE + CAMERA (Bruno Simon style)
+// ═══════════════════════════════════════════
+let gameState = 'loading';
+
+// Camera: isometric angle + lerp follow
+const cameraAngle = new THREE.Vector3(1.135, 1.15, 1.45);
+const cameraTarget = new THREE.Vector3(0, 0, 10);
+let zoomDist = 16;
+const ZOOM_MIN = 10, ZOOM_MAX = 28;
+
+function respawnCar() {
+  car.x = 0; car.z = 10; car.y = 0;
+  car.angle = Math.PI; car.speed = 0; car.steer = 0;
+  carBody.position.set(0, 0.35, 10);
+  carBody.velocity.set(0, 0, 0);
+  if (carModel) { carModel.rotation.set(0, 0, 0); carModel.visible = true; }
+}
+
+// ═══════════════════════════════════════════
+// UPDATE LOOP
+// ═══════════════════════════════════════════
+const clock = new THREE.Clock();
+let smokeTimer = 0;
+let hintHidden = false;
+
+function update() {
+  requestAnimationFrame(update);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const dtMs = dt * 1000;
+
+  if (gameState === 'loading') { composer.render(); return; }
+
+  // ─── CAR CONTROLS (Bruno-style incremental steering) ───
+  if (gameState === 'playing' && !modalOpen && carModel) {
+    const accel = keys['ArrowUp'] || keys['w'] || keys['ц'];
+    const reverse = keys['ArrowDown'] || keys['s'] || keys['ы'];
+    const steerL = keys['ArrowLeft'] || keys['a'] || keys['ф'];
+    const steerR = keys['ArrowRight'] || keys['d'] || keys['в'];
+    const brake = keys[' '];
+    const boost = keys['Shift'];
+
+    const maxSpd = boost ? car.maxSpeedBoost : car.maxSpeed;
+
+    // Acceleration
+    if (accel) car.speed = Math.min(car.speed + car.accel, maxSpd);
+    else if (reverse) car.speed = Math.max(car.speed - car.accel, -maxSpd * 0.35);
+
+    // Friction / braking
+    if (brake) car.speed *= car.brakeDecel;
+    else if (!accel && !reverse) car.speed *= car.decel;
+    if (Math.abs(car.speed) < 0.0005) car.speed = 0;
+
+    // Steering (incremental + self-centering)
+    const speedFactor = Math.min(Math.abs(car.speed) / car.maxSpeed, 1);
+    if (steerL) car.steer = Math.min(car.steer + car.steerSpeed * dtMs, car.steerMax);
+    else if (steerR) car.steer = Math.max(car.steer - car.steerSpeed * dtMs, -car.steerMax);
+    else {
+      // Self-center
+      if (car.steer > 0) car.steer = Math.max(0, car.steer - car.steerSpeed * car.steerReturn * dtMs);
+      else car.steer = Math.min(0, car.steer + car.steerSpeed * car.steerReturn * dtMs);
+    }
+
+    // Apply steering to angle (only when moving)
+    car.angle += car.steer * speedFactor * (car.speed >= 0 ? 1 : -1);
+
+    // Move
+    car.x += Math.sin(car.angle) * car.speed;
+    car.z += Math.cos(car.angle) * car.speed;
+    car.y += (0 - car.y) * 0.15;
+
+    // Clamp to desk bounds (walls handle physics, this is visual safety)
+    const bound = DESK_HALF - 1;
+    car.x = Math.max(-bound, Math.min(bound, car.x));
+    car.z = Math.max(-bound, Math.min(bound, car.z));
+
+    // Update visual
+    carModel.position.set(car.x, car.y, car.z);
+    carModel.rotation.y = car.angle;
+
+    // Physics body follows car (for pushing objects)
+    const vx = (car.x - carBody.position.x) / Math.max(dt, 0.001);
+    const vz = (car.z - carBody.position.z) / Math.max(dt, 0.001);
+    carBody.velocity.set(vx, 0, vz);
+    carBody.position.set(car.x, car.y + 0.35, car.z);
+    carBody.quaternion.setFromEuler(0, car.angle, 0);
+
+    // Smoke when braking at speed
+    smokeTimer += dt;
+    if (brake && Math.abs(car.speed) > 0.05 && smokeTimer > 0.05) {
+      smokeTimer = 0;
+      const bx = car.x - Math.sin(car.angle) * 0.8;
+      const bz = car.z - Math.cos(car.angle) * 0.8;
+      emitSmoke(bx, car.y, bz);
+      emitSmoke(bx + (Math.random() - 0.5) * 0.3, car.y, bz + (Math.random() - 0.5) * 0.3);
+    }
+
+    // Hide hint
+    if (!hintHidden && Math.abs(car.speed) > 0.01) {
+      hintHidden = true;
+      setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+    }
+  }
+
+  // ─── PHYSICS STEP ───
+  if (gameState !== 'loading') {
+    world.step(1 / 60, dt, 3);
+  }
+
+  // ─── SYNC DYNAMIC OBJECTS ───
+  dynamicObjects.forEach(({ mesh, body }) => {
+    if (body.position.y < -10) {
+      if (!body._removed) { world.removeBody(body); mesh.visible = false; body._removed = true; }
+      return;
+    }
+    mesh.position.set(body.position.x, body.position.y, body.position.z);
+    mesh.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+  });
+
+  let pinsNeedUpdate = false;
+  pinData.forEach((pin, i) => {
+    if (!pin.alive) return;
+    if (pin.body.position.y < -10) {
+      world.removeBody(pin.body); pin.alive = false;
+      _dummy.scale.set(0, 0, 0); _dummy.updateMatrix();
+      pinMesh.setMatrixAt(i, _dummy.matrix);
+      stripeMesh.setMatrixAt(i, _dummy.matrix);
+      pinsNeedUpdate = true; return;
+    }
+    _dummy.position.copy(pin.body.position);
+    _dummy.quaternion.copy(pin.body.quaternion);
+    _dummy.scale.set(1, 1, 1);
+    _dummy.updateMatrix();
+    pinMesh.setMatrixAt(i, _dummy.matrix);
+    const so = new THREE.Vector3(0, 0.1, 0);
+    so.applyQuaternion(_dummy.quaternion);
+    _dummy.position.add(so);
+    _dummy.updateMatrix();
+    stripeMesh.setMatrixAt(i, _dummy.matrix);
+    pinsNeedUpdate = true;
+  });
+  if (pinsNeedUpdate) {
+    pinMesh.instanceMatrix.needsUpdate = true;
+    stripeMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  let blocksNeedUpdate = false;
+  blockData.forEach((blk, i) => {
+    if (!blk.alive) return;
+    if (blk.body.position.y < -10) {
+      world.removeBody(blk.body); blk.alive = false;
+      _dummy.scale.set(0, 0, 0); _dummy.updateMatrix();
+      blockMesh.setMatrixAt(i, _dummy.matrix);
+      blocksNeedUpdate = true; return;
+    }
+    _dummy.position.copy(blk.body.position);
+    _dummy.quaternion.copy(blk.body.quaternion);
+    _dummy.scale.set(1, 1, 1);
+    _dummy.updateMatrix();
+    blockMesh.setMatrixAt(i, _dummy.matrix);
+    blocksNeedUpdate = true;
+  });
+  if (blocksNeedUpdate) blockMesh.instanceMatrix.needsUpdate = true;
+
+  // ─── SMOKE PARTICLES ───
+  smokePool.forEach(p => {
+    if (p.life <= 0) return;
+    p.life -= dt / p.maxLife;
+    p.mesh.position.x += p.vx * dt;
+    p.mesh.position.y += p.vy * dt;
+    p.mesh.position.z += p.vz * dt;
+    const t = 1 - p.life;
+    p.mesh.scale.setScalar(0.3 + t * 0.8);
+    p.mesh.material.opacity = p.life * 0.4;
+    if (p.life <= 0) p.mesh.visible = false;
+  });
+
+  // ─── CAMERA (Bruno-style isometric lerp) ───
+  if (!orbitMode) {
+    cameraTarget.x += (car.x - cameraTarget.x) * 0.15;
+    cameraTarget.y += (car.y - cameraTarget.y) * 0.15;
+    cameraTarget.z += (car.z - cameraTarget.z) * 0.15;
+
+    const dir = cameraAngle.clone().normalize().multiplyScalar(zoomDist);
+    camera.position.set(
+      cameraTarget.x + dir.x,
+      cameraTarget.y + dir.y,
+      cameraTarget.z + dir.z
+    );
+    camera.lookAt(cameraTarget.x, cameraTarget.y, cameraTarget.z);
+
+    keyLight.position.set(car.x - 8, 25, car.z + 8);
+    keyLight.target.position.set(car.x, 0, car.z);
+    keyLight.target.updateMatrixWorld();
+  } else {
+    orbitControls.update();
+  }
+
+  // ─── SPRITES ───
+  nearbyZone = null;
+  for (const zone of interactiveZones) {
+    const dx = car.x - zone.x, dz = car.z - zone.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < zone.radius) {
+      nearbyZone = zone;
+      zone.sprite.visible = true;
+      zone.sprite.position.set(zone.x, 3, zone.z);
+      const pulse = 1 + Math.sin(Date.now() * 0.004) * 0.05;
+      zone.sprite.scale.set(3.5 * pulse, 1.1 * pulse, 1);
+    } else {
+      zone.sprite.visible = false;
+    }
+  }
+
+  // ─── GROUND LABELS ───
+  groundLabelMeshes.forEach(gl => {
+    const dx = car.x - gl.baseX, dz = car.z - gl.baseZ;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const near = Math.max(0, 1 - dist / 12);
+    gl.mesh.material.opacity = 0.15 + near * 0.6;
+    const pulse = 1 + near * Math.sin(Date.now() * 0.003) * 0.05;
+    gl.mesh.scale.set(pulse, pulse, 1);
+  });
+
+  // ─── DEBUG ───
+  if (document.body.classList.contains('debug')) {
+    debugInfo.textContent = `Car: (${car.x.toFixed(1)}, ${car.z.toFixed(1)}) spd=${car.speed.toFixed(3)} steer=${car.steer.toFixed(3)} bodies=${world.bodies.length}`;
+  }
+
+  composer.render();
+}
+
+update();
+</script>
+</body>
+</html>

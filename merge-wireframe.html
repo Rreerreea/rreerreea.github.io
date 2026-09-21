@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Добрый Merge — Wireframe</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #f2f2f2;
+    --card: #fff;
+    --gray1: #e0e0e0;
+    --gray2: #c4c4c4;
+    --gray3: #9e9e9e;
+    --gray4: #6e6e6e;
+    --dark: #333;
+    --accent: #444;
+    --radius: 12px;
+    --nav-h: 64px;
+    --status-h: 44px;
+  }
+  html, body {
+    font-family: -apple-system, 'SF Pro', 'Helvetica Neue', sans-serif;
+    background: #1a1a1a;
+    color: var(--dark);
+    height: 100%; overflow: hidden;
+  }
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    margin: 0 auto; position: relative;
+    background: var(--bg); overflow: hidden;
+  }
+  @media (max-width: 420px) {
+    .phone { width: 100vw; height: 100vh; height: 100dvh; }
+  }
+
+  /* Status bar mock */
+  .status-bar {
+    height: var(--status-h); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 14px; font-weight: 600; color: var(--dark);
+    background: var(--card);
+  }
+
+  /* Screens */
+  .screen {
+    display: none; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* Content area */
+  .content {
+    flex: 1; overflow-y: auto; padding: 0 16px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    height: var(--nav-h); background: var(--card);
+    display: flex; border-top: 1px solid var(--gray1);
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    font-size: 11px; color: var(--gray3); cursor: pointer;
+    transition: color .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-item.active { color: var(--dark); font-weight: 600; }
+  .nav-icon {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--gray1); display: flex; align-items: center;
+    justify-content: center; font-size: 14px;
+  }
+  .nav-item.active .nav-icon { background: var(--dark); color: #fff; }
+
+  /* HUD bar */
+  .hud {
+    display: flex; gap: 8px; padding: 8px 16px;
+    background: var(--card); align-items: center;
+  }
+  .hud-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600; color: var(--dark);
+  }
+  .hud-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--gray2); display: flex; align-items: center;
+    justify-content: center; font-size: 12px;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    padding: 8px 16px 12px; background: var(--card);
+  }
+  .progress-label {
+    font-size: 12px; color: var(--gray4); margin-bottom: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .progress-bar {
+    height: 8px; background: var(--gray1); border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 35%; background: var(--gray3);
+    border-radius: 4px; transition: width .3s;
+  }
+
+  /* Game grid */
+  .grid-wrap { padding: 16px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 6px; aspect-ratio: 1;
+  }
+  .cell {
+    background: var(--gray1); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--gray4);
+    aspect-ratio: 1; position: relative;
+  }
+  .cell.filled { background: var(--gray2); color: var(--dark); }
+  .cell.highlight { background: #bbb; color: #fff; }
+  .cell.target { border: 2px dashed var(--gray3); }
+
+  /* Boosters bar */
+  .boosters-bar {
+    display: flex; gap: 8px; padding: 12px 16px;
+    justify-content: center;
+  }
+  .booster-btn {
+    width: 64px; height: 64px; border-radius: var(--radius);
+    background: var(--card); border: 1px solid var(--gray1);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    cursor: pointer; transition: background .15s;
+  }
+  .booster-btn:active { background: var(--gray1); }
+  .booster-icon { font-size: 20px; }
+  .booster-label { font-size: 9px; color: var(--gray4); }
+  .booster-count {
+    font-size: 10px; font-weight: 700; color: var(--dark);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 8px;
+  }
+  .card-subtitle {
+    font-size: 12px; color: var(--gray4); margin-bottom: 12px;
+  }
+
+  /* Task item */
+  .task-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--gray1);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--gray1); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .task-info { flex: 1; }
+  .task-name { font-size: 14px; font-weight: 600; }
+  .task-desc { font-size: 12px; color: var(--gray4); margin-top: 2px; }
+  .task-progress-bar {
+    height: 4px; background: var(--gray1); border-radius: 2px;
+    margin-top: 6px; overflow: hidden;
+  }
+  .task-progress-fill { height: 100%; background: var(--gray3); border-radius: 2px; }
+  .task-reward {
+    font-size: 12px; font-weight: 700; color: var(--dark);
+    background: var(--gray1); padding: 6px 12px; border-radius: 8px;
+    white-space: nowrap; cursor: pointer;
+  }
+  .task-reward.claimable { background: var(--dark); color: #fff; }
+
+  /* Shop item */
+  .shop-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .shop-item {
+    background: var(--card); border-radius: var(--radius);
+    padding: 12px; text-align: center; cursor: pointer;
+    border: 1px solid var(--gray1); transition: border-color .15s;
+  }
+  .shop-item:active { border-color: var(--gray3); }
+  .shop-thumb {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: var(--gray1); margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .shop-name { font-size: 13px; font-weight: 600; }
+  .shop-price {
+    font-size: 12px; color: var(--gray4); margin-top: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .shop-price .coin { font-weight: 700; color: var(--dark); }
+
+  /* Prize / inventory item */
+  .prize-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .prize-item {
+    background: var(--card); border-radius: var(--radius);
+    padding: 12px; text-align: center; border: 1px solid var(--gray1);
+    position: relative;
+  }
+  .prize-thumb {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: var(--gray1); margin: 0 auto 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .prize-name { font-size: 11px; font-weight: 600; }
+  .prize-qty {
+    position: absolute; top: 6px; right: 6px;
+    background: var(--dark); color: #fff;
+    font-size: 10px; font-weight: 700;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Section header */
+  .section-header {
+    font-size: 17px; font-weight: 700; padding: 16px 0 10px;
+  }
+  .section-sub {
+    font-size: 12px; color: var(--gray4); margin-top: -6px; margin-bottom: 12px;
+  }
+
+  /* Overlay / Modal */
+  .overlay {
+    display: none; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.5); z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .overlay.active { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 20px;
+    padding: 28px 24px; text-align: center;
+    width: 100%; max-width: 340px;
+  }
+  .modal-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--gray1); margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .modal-text { font-size: 14px; color: var(--gray4); margin-bottom: 20px; line-height: 1.4; }
+
+  /* Rewards row */
+  .rewards-row {
+    display: flex; gap: 8px; justify-content: center;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .reward-chip {
+    background: var(--gray1); border-radius: 10px;
+    padding: 8px 12px; text-align: center; min-width: 64px;
+  }
+  .reward-chip-icon { font-size: 18px; margin-bottom: 2px; }
+  .reward-chip-text { font-size: 10px; font-weight: 600; color: var(--dark); }
+
+  /* Buttons */
+  .btn {
+    display: block; width: 100%; padding: 16px;
+    border: none; border-radius: var(--radius);
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn:active { opacity: .7; }
+  .btn-primary { background: var(--dark); color: #fff; }
+  .btn-secondary { background: var(--gray1); color: var(--dark); }
+  .btn + .btn { margin-top: 8px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 8px; padding: 12px 0;
+  }
+  .tab {
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    background: var(--gray1); color: var(--gray4);
+    cursor: pointer; transition: all .15s;
+  }
+  .tab.active { background: var(--dark); color: #fff; }
+
+  /* Annotation labels */
+  .annotation {
+    font-size: 10px; color: var(--gray3);
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 4px 8px; background: #fffbe6;
+    border-radius: 4px; margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  /* Screen title */
+  .screen-title {
+    font-size: 20px; font-weight: 700; padding: 16px 0 4px;
+  }
+
+  /* Inventory btn in game */
+  .inventory-float {
+    position: absolute; right: 16px; bottom: 140px;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--card); border: 1px solid var(--gray1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  }
+
+  /* Collectible placement highlight */
+  .cell.can-place {
+    border: 2px solid var(--dark);
+    background: #d5d5d5;
+  }
+
+  /* Chain display */
+  .chain-display {
+    display: flex; gap: 4px; align-items: center;
+    padding: 8px 16px; background: var(--card);
+    overflow-x: auto;
+  }
+  .chain-step {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: var(--gray1); flex-shrink: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 600; color: var(--gray4);
+  }
+  .chain-step.reached { background: var(--gray2); color: var(--dark); }
+  .chain-arrow { font-size: 12px; color: var(--gray2); flex-shrink: 0; }
+
+  /* Scrollbar hide */
+  .content::-webkit-scrollbar { display: none; }
+  .content { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--gray1); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- ===================== SCREEN: GAME ===================== -->
+  <div class="screen active" id="screen-game">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-weight:400; font-size:12px">Добрый Merge</span>
+      <span style="font-size:12px">⚙</span>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-item">
+        <div class="hud-icon">⚡</div>
+        <span>3/5</span>
+      </div>
+      <div class="hud-item">
+        <div class="hud-icon">🪙</div>
+        <span>1 240</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="hud-item" style="font-size:12px; color:var(--gray4)">
+        Цель: 1 л
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Уровень 3</span>
+        <span>175 / 500</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:35%"></div>
+      </div>
+    </div>
+
+    <!-- Chain preview: Chain 1 - Cola -->
+    <div class="chain-display" style="padding-bottom:4px">
+      <div style="font-size:9px;color:var(--gray4);width:28px;flex-shrink:0">Кола</div>
+      <div class="chain-step reached">Капля</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step reached">Стакан</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">Банка</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">0.5 л</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">1 л</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">2 л</div>
+    </div>
+    <!-- Chain preview: Chain 2 - Pizza -->
+    <div class="chain-display" style="padding-top:0">
+      <div style="font-size:9px;color:var(--gray4);width:28px;flex-shrink:0">Пицца</div>
+      <div class="chain-step reached">Кусок</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">2 куска</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">Полов.</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">3/4</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">Целая</div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">Коробка</div>
+    </div>
+
+    <!-- Game grid -->
+    <div class="grid-wrap">
+      <div class="grid" id="game-grid">
+        <div class="cell filled">Капля</div>
+        <div class="cell filled">Стакан</div>
+        <div class="cell"></div>
+        <div class="cell filled">Капля</div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell filled">Банка</div>
+        <div class="cell filled">Капля</div>
+        <div class="cell"></div>
+        <div class="cell filled">Стакан</div>
+        <div class="cell"></div>
+        <div class="cell filled" style="font-size:9px">Пицца 🍕</div>
+        <div class="cell filled">Капля</div>
+        <div class="cell"></div>
+        <div class="cell filled">0.5 л</div>
+        <div class="cell filled">Стакан</div>
+        <div class="cell"></div>
+        <div class="cell filled">Капля</div>
+        <div class="cell filled" style="font-size:9px">Пицца 🍕</div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell filled">Банка</div>
+        <div class="cell"></div>
+        <div class="cell filled">Стакан</div>
+        <div class="cell filled">Капля</div>
+      </div>
+    </div>
+
+    <!-- Boosters + Inventory -->
+    <div class="boosters-bar">
+      <div class="booster-btn" onclick="showModal('modal-hammer')">
+        <div class="booster-icon">🔨</div>
+        <div class="booster-label">Молоток</div>
+        <div class="booster-count">×2</div>
+      </div>
+      <div class="booster-btn" onclick="showModal('modal-swap')">
+        <div class="booster-icon">🔄</div>
+        <div class="booster-label">Swap</div>
+        <div class="booster-count">×1</div>
+      </div>
+      <div class="booster-btn" onclick="showModal('modal-undo')">
+        <div class="booster-icon">↩️</div>
+        <div class="booster-label">Undo</div>
+        <div class="booster-count">×3</div>
+      </div>
+      <div style="width:1px;background:var(--gray1);margin:4px 0"></div>
+      <div class="booster-btn" onclick="showModal('modal-inventory')" style="border-style:dashed">
+        <div class="booster-icon">📦</div>
+        <div class="booster-label">Коллекции</div>
+        <div class="booster-count">×1</div>
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('screen-tasks')">
+        <div class="nav-icon">📋</div>Задания
+      </div>
+      <div class="nav-item" onclick="goTo('screen-shop')">
+        <div class="nav-icon">🛒</div>Магазин
+      </div>
+      <div class="nav-item" onclick="goTo('screen-prizes')">
+        <div class="nav-icon">🎁</div>Призы
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: TASKS ===================== -->
+  <div class="screen" id="screen-tasks">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-weight:400; font-size:12px">Задания</span>
+      <span style="font-size:12px; cursor:pointer" onclick="goTo('screen-game')">✕</span>
+    </div>
+
+    <div class="content">
+      <div class="screen-title">Задания</div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active">Ежедневные</div>
+        <div class="tab">Еженедельные</div>
+      </div>
+
+      <!-- Daily tasks -->
+      <div class="card">
+        <div class="task-item">
+          <div class="task-icon">🎮</div>
+          <div class="task-info">
+            <div class="task-name">Сыграй 1 сессию</div>
+            <div class="task-desc">Начни и заверши любую сессию</div>
+            <div class="task-progress-bar">
+              <div class="task-progress-fill" style="width:100%"></div>
+            </div>
+          </div>
+          <div class="task-reward claimable">+50 🪙  Забрать</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon">🔗</div>
+          <div class="task-info">
+            <div class="task-name">Сделай 10 слияний</div>
+            <div class="task-desc">Любые слияния в одной или нескольких сессиях</div>
+            <div class="task-progress-bar">
+              <div class="task-progress-fill" style="width:60%"></div>
+            </div>
+          </div>
+          <div class="task-reward">6/10</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon">🏆</div>
+          <div class="task-info">
+            <div class="task-name">Выиграй 1 сессию</div>
+            <div class="task-desc">Достигни целевого тайла — Coin + шанс бустера</div>
+            <div class="task-progress-bar">
+              <div class="task-progress-fill" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="task-reward">0/1</div>
+        </div>
+      </div>
+
+      <div class="section-header">Внешние задания</div>
+      <div class="section-sub">Взаимодействие за пределами игры</div>
+
+      <div class="card">
+        <div class="task-item">
+          <div class="task-icon">🏦</div>
+          <div class="task-info">
+            <div class="task-name">Перейди в Т-Банк</div>
+            <div class="task-desc">Нажми на кнопку и перейди в приложение</div>
+          </div>
+          <div class="task-reward">+200 🪙</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon">🧾</div>
+          <div class="task-info">
+            <div class="task-name">Соверши покупку</div>
+            <div class="task-desc">Покупка через Т-Банк — самая большая награда</div>
+          </div>
+          <div class="task-reward">+500 🪙 +⚡</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon">✈️</div>
+          <div class="task-info">
+            <div class="task-name">Подпишись на ТГ-канал</div>
+            <div class="task-desc">Подпишись на канал Добрый</div>
+          </div>
+          <div class="task-reward">+80 🪙</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon">👥</div>
+          <div class="task-info">
+            <div class="task-name">Пригласи друга</div>
+            <div class="task-desc">Отправь ссылку другу</div>
+          </div>
+          <div class="task-reward">+100 🪙</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="goTo('screen-tasks')">
+        <div class="nav-icon">📋</div>Задания
+      </div>
+      <div class="nav-item" onclick="goTo('screen-shop')">
+        <div class="nav-icon">🛒</div>Магазин
+      </div>
+      <div class="nav-item" onclick="goTo('screen-prizes')">
+        <div class="nav-icon">🎁</div>Призы
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: SHOP ===================== -->
+  <div class="screen" id="screen-shop">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-weight:400; font-size:12px">Магазин</span>
+      <span style="font-size:12px; cursor:pointer" onclick="goTo('screen-game')">✕</span>
+    </div>
+
+    <div class="hud" style="justify-content:flex-end">
+      <div class="hud-item">
+        <div class="hud-icon">🪙</div>
+        <span>1 240</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-header">Бустеры</div>
+      <div class="shop-grid" style="grid-template-columns: repeat(3, 1fr)">
+        <div class="shop-item">
+          <div class="shop-thumb">🔨</div>
+          <div class="shop-name">Молоток</div>
+          <div class="shop-price"><span class="coin">80</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">🔄</div>
+          <div class="shop-name">Swap</div>
+          <div class="shop-price"><span class="coin">60</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">↩️</div>
+          <div class="shop-name">Undo</div>
+          <div class="shop-price"><span class="coin">40</span> 🪙</div>
+        </div>
+      </div>
+
+      <div class="section-header">Коллекционные предметы</div>
+      <div class="section-sub">Поставь на поле в пустую клетку для комбо</div>
+      <div class="shop-grid">
+        <div class="shop-item">
+          <div class="shop-thumb">🥤</div>
+          <div class="shop-name">Бутылка 1.5 л</div>
+          <div class="shop-price"><span class="coin">200</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">🍕</div>
+          <div class="shop-name">Коробка пиццы</div>
+          <div class="shop-price"><span class="coin">200</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">🧃</div>
+          <div class="shop-name">Бутылка 2 л</div>
+          <div class="shop-price"><span class="coin">350</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">🍕</div>
+          <div class="shop-name">Пицца с соусом</div>
+          <div class="shop-price"><span class="coin">350</span> 🪙</div>
+        </div>
+      </div>
+
+      <div class="section-header">Энергия</div>
+      <div class="shop-grid">
+        <div class="shop-item">
+          <div class="shop-thumb">⚡</div>
+          <div class="shop-name">+1 энергия</div>
+          <div class="shop-price"><span class="coin">50</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">⚡⚡</div>
+          <div class="shop-name">+3 энергии</div>
+          <div class="shop-price"><span class="coin">130</span> 🪙</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-thumb">⚡⚡⚡</div>
+          <div class="shop-name">+5 энергий</div>
+          <div class="shop-price"><span class="coin">200</span> 🪙</div>
+        </div>
+      </div>
+
+      <div style="height: 20px"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('screen-tasks')">
+        <div class="nav-icon">📋</div>Задания
+      </div>
+      <div class="nav-item active" onclick="goTo('screen-shop')">
+        <div class="nav-icon">🛒</div>Магазин
+      </div>
+      <div class="nav-item" onclick="goTo('screen-prizes')">
+        <div class="nav-icon">🎁</div>Призы
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: PRIZES ===================== -->
+  <div class="screen" id="screen-prizes">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-weight:400; font-size:12px">Призы</span>
+      <span style="font-size:12px; cursor:pointer" onclick="goTo('screen-game')">✕</span>
+    </div>
+
+    <div class="content">
+      <div class="screen-title">Мои призы</div>
+      <div class="section-sub">Инвентарь — всё полученное и купленное</div>
+
+      <!-- Coin balance -->
+      <div class="card" style="display:flex; align-items:center; gap:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--gray2);display:flex;align-items:center;justify-content:center;font-size:20px">🪙</div>
+        <div>
+          <div style="font-size:13px;color:var(--gray4)">Добрый Coin</div>
+          <div style="font-size:22px;font-weight:700">1 240</div>
+        </div>
+      </div>
+
+      <div class="section-header">Бустеры</div>
+      <div class="prize-grid">
+        <div class="prize-item">
+          <div class="prize-qty">2</div>
+          <div class="prize-thumb">🔨</div>
+          <div class="prize-name">Молоток</div>
+        </div>
+        <div class="prize-item">
+          <div class="prize-qty">1</div>
+          <div class="prize-thumb">🔄</div>
+          <div class="prize-name">Swap</div>
+        </div>
+        <div class="prize-item">
+          <div class="prize-qty">3</div>
+          <div class="prize-thumb">↩️</div>
+          <div class="prize-name">Undo</div>
+        </div>
+      </div>
+
+      <div class="section-header">Коллекционные</div>
+      <div class="prize-grid">
+        <div class="prize-item">
+          <div class="prize-qty">1</div>
+          <div class="prize-thumb">🥤</div>
+          <div class="prize-name">Бутылка 1.5 л</div>
+        </div>
+        <div class="prize-item" style="opacity:.4">
+          <div class="prize-thumb">🍕</div>
+          <div class="prize-name">Коробка пиццы</div>
+        </div>
+        <div class="prize-item" style="opacity:.4">
+          <div class="prize-thumb">🧃</div>
+          <div class="prize-name">Бутылка 2 л</div>
+        </div>
+      </div>
+
+      <div class="section-header">Энергия</div>
+      <div class="prize-grid">
+        <div class="prize-item">
+          <div class="prize-qty">5</div>
+          <div class="prize-thumb">⚡</div>
+          <div class="prize-name">Энергия</div>
+        </div>
+      </div>
+
+      <div class="section-header">Промокоды</div>
+      <div class="card">
+        <div class="task-item">
+          <div class="task-icon">🏷️</div>
+          <div class="task-info">
+            <div class="task-name">Скидка 15% на Добрый</div>
+            <div class="task-desc">Действует до 30.03.2026</div>
+          </div>
+          <div class="task-reward claimable">Копировать</div>
+        </div>
+      </div>
+
+      <div style="height: 20px"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('screen-tasks')">
+        <div class="nav-icon">📋</div>Задания
+      </div>
+      <div class="nav-item" onclick="goTo('screen-shop')">
+        <div class="nav-icon">🛒</div>Магазин
+      </div>
+      <div class="nav-item active" onclick="goTo('screen-prizes')">
+        <div class="nav-icon">🎁</div>Призы
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- Session Start -->
+  <div class="overlay" id="modal-start">
+    <div class="modal">
+      <div class="modal-icon">⚡</div>
+      <div class="modal-title">Начать сессию?</div>
+      <div class="modal-text">
+        Будет потрачена 1 энергия.<br>
+        Осталось: <b>3/5</b><br><br>
+        Цель сессии: собрать <b>1 л</b>
+      </div>
+      <button class="btn btn-primary" onclick="hideModal('modal-start')">Играть  −1 ⚡</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-start')">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Win -->
+  <div class="overlay" id="modal-win">
+    <div class="modal">
+      <div class="modal-icon">🎉</div>
+      <div class="modal-title">Победа!</div>
+      <div class="modal-text">Целевой тайл «1 л» получен!<br>Сессия завершена<br>+35 очков прогресса</div>
+      <div class="rewards-row">
+        <div class="reward-chip">
+          <div class="reward-chip-icon">🪙</div>
+          <div class="reward-chip-text">+120</div>
+        </div>
+        <div class="reward-chip">
+          <div class="reward-chip-icon">⭐</div>
+          <div class="reward-chip-text">+35 XP</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="hideModal('modal-win')">Забрать</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-win')">Играть ещё  −1 ⚡</button>
+    </div>
+  </div>
+
+  <!-- Lose -->
+  <div class="overlay" id="modal-lose">
+    <div class="modal">
+      <div class="modal-icon">😔</div>
+      <div class="modal-title">Поле заполнено</div>
+      <div class="modal-text">Поле заполнено, нет возможных ходов и слияний.</div>
+      <div class="rewards-row">
+        <div class="reward-chip">
+          <div class="reward-chip-icon">⭐</div>
+          <div class="reward-chip-text">+10 XP</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="hideModal('modal-lose')">Попробовать снова  −1 ⚡</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-lose')">На главную</button>
+    </div>
+  </div>
+
+  <!-- Level Up -->
+  <div class="overlay" id="modal-levelup">
+    <div class="modal">
+      <div class="modal-icon">🆙</div>
+      <div class="modal-title">Уровень 4!</div>
+      <div class="modal-text">Прогресс заполнен — вот твои награды:</div>
+      <div class="rewards-row">
+        <div class="reward-chip">
+          <div class="reward-chip-icon">🪙</div>
+          <div class="reward-chip-text">+200</div>
+        </div>
+        <div class="reward-chip">
+          <div class="reward-chip-icon">🔨</div>
+          <div class="reward-chip-text">×1</div>
+        </div>
+        <div class="reward-chip">
+          <div class="reward-chip-icon">⚡</div>
+          <div class="reward-chip-text">+2</div>
+        </div>
+        <div class="reward-chip">
+          <div class="reward-chip-icon">🏷️</div>
+          <div class="reward-chip-text">Промо</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="hideModal('modal-levelup')">Забрать награды</button>
+    </div>
+  </div>
+
+  <!-- Hammer activation -->
+  <div class="overlay" id="modal-hammer">
+    <div class="modal">
+      <div class="modal-icon">🔨</div>
+      <div class="modal-title">Молоток</div>
+      <div class="modal-text">Выбери тайл, который хочешь удалить.<br>Клетка станет пустой — ничего не сдвигается и не падает.</div>
+      <button class="btn btn-primary" onclick="hideModal('modal-hammer')">Активировать</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-hammer')">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Swap activation -->
+  <div class="overlay" id="modal-swap">
+    <div class="modal">
+      <div class="modal-icon">🔄</div>
+      <div class="modal-title">Swap</div>
+      <div class="modal-text">Выбери два тайла, чтобы поменять их местами.</div>
+      <button class="btn btn-primary" onclick="hideModal('modal-swap')">Активировать</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-swap')">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Undo activation -->
+  <div class="overlay" id="modal-undo">
+    <div class="modal">
+      <div class="modal-icon">↩️</div>
+      <div class="modal-title">Undo</div>
+      <div class="modal-text">Откатить последний ход (свайп)?</div>
+      <button class="btn btn-primary" onclick="hideModal('modal-undo')">Откатить</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-undo')">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Inventory (in-session) -->
+  <div class="overlay" id="modal-inventory">
+    <div class="modal">
+      <div class="modal-icon">📦</div>
+      <div class="modal-title">Инвентарь</div>
+      <div class="modal-text">Выбери коллекционный предмет для установки в пустую клетку:</div>
+      <div class="rewards-row">
+        <div class="reward-chip" style="cursor:pointer" onclick="hideModal('modal-inventory'); showModal('modal-place')">
+          <div class="reward-chip-icon">🥤</div>
+          <div class="reward-chip-text">1.5 л ×1</div>
+        </div>
+        <div class="reward-chip" style="opacity:.3">
+          <div class="reward-chip-icon">🍕</div>
+          <div class="reward-chip-text">Нет</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="hideModal('modal-inventory')">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Place collectible -->
+  <div class="overlay" id="modal-place">
+    <div class="modal">
+      <div class="modal-icon">🥤</div>
+      <div class="modal-title">Бутылка 1.5 л</div>
+      <div class="modal-text">Нажми на пустую клетку на поле, чтобы поставить предмет.<br><br>Предмет работает как обычный тайл — сливай парой.</div>
+      <div style="background:var(--gray1); border-radius:10px; padding:12px; margin-bottom:16px">
+        <div style="display:grid; grid-template-columns: repeat(5,1fr); gap:4px;">
+          <div class="cell filled" style="font-size:8px;height:40px">Капля</div>
+          <div class="cell filled" style="font-size:8px;height:40px">Стакан</div>
+          <div class="cell can-place" style="font-size:8px;height:40px">↓</div>
+          <div class="cell filled" style="font-size:8px;height:40px">Капля</div>
+          <div class="cell can-place" style="font-size:8px;height:40px">↓</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="hideModal('modal-place')">Поставить</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-place')">Назад</button>
+    </div>
+  </div>
+
+  <!-- No empty cells -->
+  <div class="overlay" id="modal-no-space">
+    <div class="modal">
+      <div class="modal-icon">⚠️</div>
+      <div class="modal-title">Нужно свободное место</div>
+      <div class="modal-text">Все клетки заняты. Освободи место с помощью молотка или сделай слияние.</div>
+      <button class="btn btn-primary" onclick="hideModal('modal-no-space'); showModal('modal-hammer')">Использовать молоток 🔨</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-no-space')">Продолжить играть</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Demo navigation panel -->
+<div style="
+  position:fixed; bottom:0; left:0; right:0;
+  background:#222; padding:8px 12px;
+  display:flex; gap:6px; flex-wrap:wrap;
+  justify-content:center; z-index:999;
+">
+  <span style="color:#888; font-size:11px; width:100%; text-align:center; margin-bottom:4px">
+    Wireframe навигация (демо)
+  </span>
+  <button onclick="showModal('modal-start')" style="all:unset;padding:6px 10px;background:#444;color:#fff;border-radius:6px;font-size:11px;cursor:pointer">Старт сессии</button>
+  <button onclick="showModal('modal-win')" style="all:unset;padding:6px 10px;background:#444;color:#fff;border-radius:6px;font-size:11px;cursor:pointer">Победа</button>
+  <button onclick="showModal('modal-lose')" style="all:unset;padding:6px 10px;background:#444;color:#fff;border-radius:6px;font-size:11px;cursor:pointer">Поражение</button>
+  <button onclick="showModal('modal-levelup')" style="all:unset;padding:6px 10px;background:#444;color:#fff;border-radius:6px;font-size:11px;cursor:pointer">Левел-ап</button>
+  <button onclick="showModal('modal-no-space')" style="all:unset;padding:6px 10px;background:#444;color:#fff;border-radius:6px;font-size:11px;cursor:pointer">Нет места</button>
+</div>
+
+<script>
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function showModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function hideModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// close overlay on background click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => {
+    if (e.target === o) o.classList.remove('active');
+  });
+});
+
+// tabs switching
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    t.parentElement.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
